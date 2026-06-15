@@ -138,6 +138,11 @@ input[type=date]{color-scheme:dark}
 .fact-row:last-child{border-bottom:none}
 .fact-main{flex:1;min-width:0}
 .fact-cli{color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fact-fecha{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text);text-align:center;min-width:58px;flex-shrink:0}
+/* PERIOD TOGGLE (concentración) */
+.period-toggle{display:flex;gap:6px}
+.period-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-family:var(--font);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .15s}
+.period-btn.on{background:var(--accent);color:#111111;border-color:var(--accent)}
 .fact-meta{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px}
 .fact-monto{font-family:var(--mono);font-weight:500;white-space:nowrap}
 .days-badge{display:inline-block;font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;margin-left:6px;text-transform:uppercase;letter-spacing:.04em}
@@ -241,7 +246,13 @@ input[type=date]{color-scheme:dark}
     <div>
       <p class="slabel">Cuentas por cobrar</p>
       <div class="card" id="cobrar-list"></div>
-      <p class="slabel">Concentración por cliente</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+        <p class="slabel" style="margin-bottom:0">Concentración por cliente</p>
+        <div class="period-toggle">
+          <button class="period-btn on" id="conc-btn-anio" onclick="setConcFiltro('anio')">2026</button>
+          <button class="period-btn" id="conc-btn-todos" onclick="setConcFiltro('todos')">Todo</button>
+        </div>
+      </div>
       <div class="util-wrap" id="concentracion"></div>
     </div>
     <div>
@@ -354,13 +365,13 @@ let ST = {
     Mayo:{venta:4300000,iva:817000,ppm:5375},
   },
   facturas: [],
-  mes:'Mayo', costosOpen:false, tab:'t26', utaRef: UTA_REF_DEFAULT,
+  mes:'Mayo', costosOpen:false, tab:'t26', utaRef: UTA_REF_DEFAULT, concFiltro:'anio',
   lastUpdate: new Date().toLocaleDateString('es-CL')
 };
 window.ST = ST;
 
 function save(){try{localStorage.setItem('mgpost_v4',JSON.stringify(ST))}catch(e){}}
-function load(){try{const s=localStorage.getItem('mgpost_v4');if(s){const p=JSON.parse(s);if(p.d26)ST.d26=p.d26;if(p.mes)ST.mes=p.mes;if(p.costosOpen)ST.costosOpen=p.costosOpen;if(p.lastUpdate)ST.lastUpdate=p.lastUpdate;if(p.utaRef)ST.utaRef=p.utaRef;if(p.facturas)ST.facturas=p.facturas;}}catch(e){}}
+function load(){try{const s=localStorage.getItem('mgpost_v4');if(s){const p=JSON.parse(s);if(p.d26)ST.d26=p.d26;if(p.mes)ST.mes=p.mes;if(p.costosOpen)ST.costosOpen=p.costosOpen;if(p.lastUpdate)ST.lastUpdate=p.lastUpdate;if(p.utaRef)ST.utaRef=p.utaRef;if(p.facturas)ST.facturas=p.facturas;if(p.concFiltro)ST.concFiltro=p.concFiltro;}}catch(e){}}
 
 const tv26=()=>MESES.reduce((s,m)=>s+(ST.d26[m]?ST.d26[m].venta:0),0);
 const md26=()=>MESES.filter(m=>ST.d26[m]).length;
@@ -651,6 +662,14 @@ async function handleRCV(file){
 function handleRcvFile(e){const f=e.target.files[0];if(f)handleRCV(f);}
 function handleRcvDrop(e){e.preventDefault();const f=e.dataTransfer.files[0];if(f)handleRCV(f);}
 
+const ANIO26='2026';
+function setConcFiltro(f){
+  ST.concFiltro = f;
+  $('conc-btn-anio').classList.toggle('on', f==='anio');
+  $('conc-btn-todos').classList.toggle('on', f==='todos');
+  save(); renderCli();
+}
+
 function renderCli(){
   if(!$('fc-fecha').value) $('fc-fecha').value = new Date().toISOString().slice(0,10);
   const facturas = ST.facturas||[];
@@ -661,18 +680,25 @@ function renderCli(){
   const clientes=[...new Set(facturas.map(f=>f.cliente))];
   $('clientesList').innerHTML = clientes.map(c=>`<option value="${escHtml(c)}">`).join('');
 
-  // concentración por cliente
+  // toggle de período (concentración / facturado)
+  $('conc-btn-anio').classList.toggle('on', ST.concFiltro!=='todos');
+  $('conc-btn-todos').classList.toggle('on', ST.concFiltro==='todos');
+  const filtroTodos = ST.concFiltro==='todos';
+  const facturasConc = filtroTodos ? facturas : facturas.filter(f=>(f.fecha||'').startsWith(ANIO26));
+  const periodoLbl = filtroTodos ? 'todo' : ANIO26;
+
+  // concentración por cliente (según período elegido)
   const porCliente={};
-  facturas.forEach(f=>{ porCliente[f.cliente]=(porCliente[f.cliente]||0)+f.monto; });
+  facturasConc.forEach(f=>{ porCliente[f.cliente]=(porCliente[f.cliente]||0)+f.monto; });
   const totalFacturado = Object.values(porCliente).reduce((s,v)=>s+v,0);
   const ranking = Object.entries(porCliente).sort((a,b)=>b[1]-a[1]);
   const topPct = ranking.length && totalFacturado>0 ? Math.round(ranking[0][1]/totalFacturado*100) : 0;
 
   $('kpiscli').innerHTML=`
     <div class="kpi"><p class="kl">Por cobrar</p><p class="kv" style="color:${totalPendiente>0?'var(--amber)':'var(--text)'}">${CLP(totalPendiente)}</p><p class="ks">${pendientes.length} factura${pendientes.length===1?'':'s'}</p></div>
-    <div class="kpi"><p class="kl">Facturado registrado</p><p class="kv">${CLP(totalFacturado)}</p><p class="ks">${facturas.length} factura${facturas.length===1?'':'s'}</p></div>
-    <div class="kpi"><p class="kl">Cliente principal</p><p class="kv" style="font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ranking.length?escHtml(ranking[0][0]):'—'}</p><p class="ks" style="color:${topPct>=30?'var(--red)':topPct>=20?'var(--amber)':'var(--text3)'}">${ranking.length?topPct+'% del total':'Sin datos'}</p></div>
-    <div class="kpi"><p class="kl">Clientes registrados</p><p class="kv">${ranking.length}</p><p class="ks">${ranking.length>0?'Activos':'Sin datos'}</p></div>
+    <div class="kpi"><p class="kl">Facturado (${periodoLbl})</p><p class="kv">${CLP(totalFacturado)}</p><p class="ks">${facturasConc.length} factura${facturasConc.length===1?'':'s'}</p></div>
+    <div class="kpi"><p class="kl">Cliente principal (${periodoLbl})</p><p class="kv" style="font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ranking.length?escHtml(ranking[0][0]):'—'}</p><p class="ks" style="color:${topPct>=30?'var(--red)':topPct>=20?'var(--amber)':'var(--text3)'}">${ranking.length?topPct+'% del total':'Sin datos'}</p></div>
+    <div class="kpi"><p class="kl">Clientes (${periodoLbl})</p><p class="kv">${ranking.length}</p><p class="ks">${ranking.length>0?'Activos':'Sin datos'}</p></div>
   `;
 
   $('cobrar-list').innerHTML = pendientes.length===0
@@ -684,8 +710,9 @@ function renderCli(){
         return `<div class="fact-row">
           <div class="fact-main">
             <div class="fact-cli">${escHtml(f.cliente)}</div>
-            <div class="fact-meta">Emitida ${fmtFecha(f.fecha)} <span class="days-badge" style="color:${dCls};background:${dBg}">${dias}d</span></div>
+            <div class="fact-meta"><span class="days-badge" style="color:${dCls};background:${dBg}">${dias}d</span></div>
           </div>
+          <div class="fact-fecha">${fmtFecha(f.fecha)}</div>
           <div class="fact-monto">${CLP(f.monto)}</div>
           <div class="row-actions">
             <button class="icon-btn" title="Marcar como pagada" onclick="toggleFacturaEstado('${f.id}')">✓</button>
@@ -695,12 +722,12 @@ function renderCli(){
       }).join('');
 
   $('concentracion').innerHTML = ranking.length===0
-    ? `<p class="empty-note">Registra facturas para ver la concentración por cliente.</p>`
+    ? `<p class="empty-note">Sin facturas registradas en este período.</p>`
     : ranking.map(([cliente,monto])=>{
         const pct = totalFacturado>0 ? Math.round(monto/totalFacturado*100) : 0;
         const color = pct>=30?'var(--red)':pct>=20?'var(--amber)':'var(--accent)';
         return `<div class="ur"><span class="ul" style="min-width:140px;color:var(--text2)">${escHtml(cliente)}</span><div class="ub"><div class="uf" style="width:${pct}%;background:${color}"></div></div><span class="uv">${pct}% · ${CLP(monto)}</span></div>`;
-      }).join('') + (topPct>=25 ? `<div class="tnote" style="margin-top:10px;margin-bottom:0"><p class="tnote-t">⚠ Concentración alta</p><p class="tnote-d"><strong style="color:var(--accent)">${escHtml(ranking[0][0])}</strong> representa el ${topPct}% de tu facturación registrada. Vale la pena priorizar diversificación si este porcentaje sigue creciendo.</p></div>` : '');
+      }).join('') + (topPct>=25 ? `<div class="tnote" style="margin-top:10px;margin-bottom:0"><p class="tnote-t">⚠ Concentración alta</p><p class="tnote-d"><strong style="color:var(--accent)">${escHtml(ranking[0][0])}</strong> representa el ${topPct}% de tu facturación (${periodoLbl}). Vale la pena priorizar diversificación si este porcentaje sigue creciendo.</p></div>` : '');
 
   renderFacturasList(facturas);
 }
@@ -727,8 +754,8 @@ function renderFacturasList(facturas){
       <div class="fact-row">
         <div class="fact-main">
           <div class="fact-cli">${escHtml(f.cliente)}</div>
-          <div class="fact-meta">${fmtFecha(f.fecha)}</div>
         </div>
+        <div class="fact-fecha">${fmtFecha(f.fecha)}</div>
         <div class="fact-monto">${CLP(f.monto)}</div>
         <button class="estado-pill ${f.estado==='pagada'?'pagada':'pendiente'}" title="Clic para cambiar estado" onclick="toggleFacturaEstado('${f.id}')">${f.estado==='pagada'?'Pagada':'Pendiente'}</button>
         <div class="row-actions"><button class="icon-btn danger" title="Eliminar" onclick="deleteFactura('${f.id}')">×</button></div>
