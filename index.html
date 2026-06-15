@@ -18,6 +18,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);padding:2rem
 .title span{color:var(--accent-page);transition:color .2s}
 .hright{font-family:var(--mono);font-size:11px;color:var(--text3);text-align:right;line-height:1.8}
 .dot{display:inline-block;width:6px;height:6px;background:var(--green);border-radius:50%;margin-right:5px;animation:pulse 2s infinite}
+.dot.off{background:var(--text3);animation:none}
+.dot.err{background:var(--red);animation:none}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 .tabs{display:flex;gap:4px;margin-bottom:1.5rem}
 .tab{font-size:11px;font-weight:600;padding:7px 14px;border-radius:8px;border:.5px solid var(--border2);cursor:pointer;background:transparent;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;transition:all .15s}
@@ -131,7 +133,7 @@ input[type=number]::placeholder{color:var(--text3)}
   </div>
   <div class="header-right">
     <button id="theme-btn" class="theme-btn" onclick="toggleTheme()">Tema amarillo</button>
-    <div class="hright"><span class="dot"></span>F29 SII oficial<br>Actualizado: <span id="lastUpdate">—</span><br>2025 completo · 2026 ene–may</div>
+    <div class="hright"><span class="dot off" id="syncDot"></span><span id="syncLabel">Conectando…</span><br>Actualizado: <span id="lastUpdate">—</span><br><span id="rangeLabel">2025 completo · 2026 en curso</span></div>
   </div>
 </div>
 
@@ -195,13 +197,12 @@ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/p
 const $ = id => document.getElementById(id);
 const CLP = v => '$' + Math.round(v).toLocaleString('es-CL');
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const COSTOS = 1226801 + 195401 + 8235;
 const STACK = [
   {n:'Sueldo bruto empresa', v:1226801},
   {n:'Contador', v:50000},
   {n:'Adobe Creative Cloud', v:16184},
   {n:'Artlist (anual ÷12)', v:20110},
-  {n:'Epidemic Sound', v:18000},
+  {n:'Epidemic Sound (anual ÷12)', v:9000},
   {n:'Higgsfield Pro (anual ÷12)', v:27550},
   {n:'ChatGPT Go', v:19000},
   {n:'Claude Pro', v:19000},
@@ -210,6 +211,7 @@ const STACK = [
   {n:'Smash (anual ÷12)', v:5613},
   {n:'Vimeo (anual ÷12)', v:8235},
 ];
+const COSTOS = STACK.reduce((s,x)=>s+x.v,0);
 const META40=40000000, META50=50000000;
 
 const D25 = {
@@ -230,6 +232,7 @@ let ST = {
   mes:'Mayo', costosOpen:false, tab:'t26',
   lastUpdate: new Date().toLocaleDateString('es-CL')
 };
+window.ST = ST;
 
 function save(){try{localStorage.setItem('mgpost_v4',JSON.stringify(ST))}catch(e){}}
 function load(){try{const s=localStorage.getItem('mgpost_v4');if(s){const p=JSON.parse(s);if(p.d26)ST.d26=p.d26;if(p.mes)ST.mes=p.mes;if(p.costosOpen)ST.costosOpen=p.costosOpen;if(p.lastUpdate)ST.lastUpdate=p.lastUpdate;}}catch(e){}}
@@ -272,6 +275,12 @@ function render26(){
   const p40=pct(total,META40), p50=pct(total,META50);
   const d=ST.d26[ST.mes];
   const ventaM=d?.venta||0, utilM=util(ventaM), margen=ventaM>0?Math.round(utilM/ventaM*100):0;
+
+  // Rango de meses con datos (header)
+  const mesesCon26=MESES.filter(m=>ST.d26[m]);
+  $('rangeLabel').textContent = mesesCon26.length
+    ? `2025 completo · 2026 ${mesesCon26[0].slice(0,3).toLowerCase()}–${mesesCon26[mesesCon26.length-1].slice(0,3).toLowerCase()}`
+    : '2025 completo · 2026 sin datos';
 
   // KPIs
   $('kpis26').innerHTML=`
@@ -489,6 +498,7 @@ function saveSimple(){
   ST.d26[ST.mes].ppm=Math.round(v*0.00125);
   ST.lastUpdate=new Date().toLocaleDateString('es-CL');
   save();render26();
+  window.fbPush?.();
 }
 
 /* ── PDF ── */
@@ -524,6 +534,7 @@ async function handlePDF(file){
     if(ext.ppm)ST.d26[m].ppm=ext.ppm;
     ST.mes=m; ST.lastUpdate=new Date().toLocaleDateString('es-CL');
     save(); render26();
+    window.fbPush?.();
     setZone('ok','✓ F29 cargado — '+m,
       [ext.mes?'Período: '+ext.mes:'',ext.venta?'Venta neta: '+CLP(ext.venta):'',ext.iva!==undefined?'IVA: '+CLP(ext.iva):'',ext.ppm?'PPM: '+CLP(ext.ppm):''].filter(Boolean).join('\n'));
   }catch(e){setZone('err','Error al leer — usa el ingreso manual');}
@@ -549,6 +560,78 @@ function toggleTheme(){
 
 load();
 render26();
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyACRmopx1jOxZyvKtjljeiUQLtkKDg6qTA",
+  authDomain: "mgpost-cotizador.firebaseapp.com",
+  projectId: "mgpost-cotizador",
+  storageBucket: "mgpost-cotizador.firebasestorage.app",
+  messagingSenderId: "803440454386",
+  appId: "1:803440454386:web:72573a66ce2b9520027e6b"
+};
+
+function setSyncUI(state){
+  const dot=document.getElementById('syncDot'), label=document.getElementById('syncLabel');
+  if(!dot||!label) return;
+  if(state==='ok'){ dot.className='dot'; label.textContent='Sincronizado'; }
+  else if(state==='connecting'){ dot.className='dot off'; label.textContent='Conectando…'; }
+  else { dot.className='dot err'; label.textContent='Modo local'; }
+}
+
+let db=null, dashRef=null, pushing=false;
+
+function mergeRemote(remote){
+  if(!remote) return;
+  window.ST.d26 = {...(window.ST.d26||{}), ...(remote.d26||{})};
+  if(remote.lastUpdate) window.ST.lastUpdate = remote.lastUpdate;
+  window.save();
+  window.render26();
+}
+
+async function initSync(){
+  setSyncUI('connecting');
+  try{
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    dashRef = doc(db,'mgpost','dashboard');
+
+    const snap = await getDoc(dashRef);
+    if(snap.exists()){
+      mergeRemote(snap.data());
+    } else {
+      // primera vez: sube lo que ya hay guardado en este dispositivo
+      await setDoc(dashRef, {d26: window.ST.d26, lastUpdate: window.ST.lastUpdate});
+    }
+    setSyncUI('ok');
+
+    onSnapshot(dashRef, s=>{
+      if(!s.exists() || pushing) return;
+      mergeRemote(s.data());
+      setSyncUI('ok');
+    }, err=>{ console.warn('Firestore onSnapshot', err); setSyncUI('off'); });
+
+  }catch(e){
+    console.warn('Firestore no disponible, modo local', e);
+    setSyncUI('off');
+  }
+}
+
+window.fbPush = async function(){
+  if(!db||!dashRef) return;
+  try{
+    pushing=true;
+    await setDoc(dashRef, {d26: window.ST.d26, lastUpdate: window.ST.lastUpdate});
+    setSyncUI('ok');
+  }catch(e){ console.warn('Firestore push',e); setSyncUI('off'); }
+  finally{ pushing=false; }
+};
+
+initSync();
 </script>
 </body>
 </html>
