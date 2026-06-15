@@ -137,7 +137,7 @@ input[type=date]{color-scheme:dark}
 .fact-row{display:flex;align-items:center;gap:.6rem;padding:8px 0;border-bottom:.5px solid var(--border);font-size:12px}
 .fact-row:last-child{border-bottom:none}
 .fact-main{flex:1;min-width:0}
-.fact-cli{color:var(--text);font-weight:500}
+.fact-cli{color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fact-meta{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px}
 .fact-monto{font-family:var(--mono);font-weight:500;white-space:nowrap}
 .days-badge{display:inline-block;font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;margin-left:6px;text-transform:uppercase;letter-spacing:.04em}
@@ -146,6 +146,20 @@ input[type=date]{color-scheme:dark}
 .icon-btn:hover{border-color:var(--accent);color:var(--accent)}
 .icon-btn.danger:hover{border-color:var(--red);color:var(--red)}
 .empty-note{font-size:11px;color:var(--text3);font-family:var(--mono);text-align:center;padding:1rem 0}
+/* ESTADO PILL (editable inline) */
+.estado-pill{font-size:9px;font-weight:700;padding:4px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;border:1px solid transparent;cursor:pointer;white-space:nowrap;transition:all .15s;font-family:var(--font)}
+.estado-pill.pendiente{background:rgba(255,179,71,.15);color:var(--amber);border-color:rgba(255,179,71,.35)}
+.estado-pill.pagada{background:rgba(61,255,160,.12);color:var(--green);border-color:rgba(61,255,160,.35)}
+.estado-pill:hover{opacity:.75}
+/* MONTH GROUPS */
+.month-group{border-bottom:.5px solid var(--border);padding:7px 0}
+.month-group:last-child{border-bottom:none}
+.month-group summary{display:flex;justify-content:space-between;align-items:center;gap:1rem;cursor:pointer;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);list-style:none;padding:5px 2px}
+.month-group summary::-webkit-details-marker{display:none}
+.month-group summary::before{content:'▸';margin-right:7px;color:var(--text3);display:inline-block;transition:transform .15s}
+.month-group[open] summary::before{content:'▾'}
+.month-summary{font-family:var(--mono);font-weight:400;color:var(--text3);text-transform:none;letter-spacing:0;white-space:nowrap}
+.month-body{padding-top:4px}
 @media(max-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}.kpis4{grid-template-columns:repeat(2,1fr)}.main-grid{grid-template-columns:1fr}.mgrid{grid-template-columns:repeat(3,1fr)}.esc-grid{grid-template-columns:1fr 1fr}.si-row{grid-template-columns:1fr}.pi{display:none}}
 @media(max-width:580px){.kpis{grid-template-columns:1fr 1fr}.kpis4{grid-template-columns:1fr 1fr}.mgrid{grid-template-columns:repeat(2,1fr)}.esc-grid{grid-template-columns:1fr}.header{flex-direction:column;align-items:flex-start;gap:.75rem}.header-right{align-items:flex-start;width:100%}}
 </style>
@@ -281,6 +295,8 @@ input[type=date]{color-scheme:dark}
       </div>
     </div>
   </div>
+  <p class="slabel">Registro de facturas — por mes</p>
+  <div class="card" id="facturas-list"></div>
   <div class="footer"><span>Registro manual de facturas · Sincronizado en la nube</span><span>MG POST SPA</span></div>
 </div>
 
@@ -685,6 +701,43 @@ function renderCli(){
         const color = pct>=30?'var(--red)':pct>=20?'var(--amber)':'var(--accent)';
         return `<div class="ur"><span class="ul" style="min-width:140px;color:var(--text2)">${escHtml(cliente)}</span><div class="ub"><div class="uf" style="width:${pct}%;background:${color}"></div></div><span class="uv">${pct}% · ${CLP(monto)}</span></div>`;
       }).join('') + (topPct>=25 ? `<div class="tnote" style="margin-top:10px;margin-bottom:0"><p class="tnote-t">⚠ Concentración alta</p><p class="tnote-d"><strong style="color:var(--accent)">${escHtml(ranking[0][0])}</strong> representa el ${topPct}% de tu facturación registrada. Vale la pena priorizar diversificación si este porcentaje sigue creciendo.</p></div>` : '');
+
+  renderFacturasList(facturas);
+}
+
+function renderFacturasList(facturas){
+  if(!facturas || facturas.length===0){
+    $('facturas-list').innerHTML = `<p class="empty-note">Aún no hay facturas registradas.</p>`;
+    return;
+  }
+  const groups={};
+  facturas.forEach(f=>{
+    const key=(f.fecha||'').slice(0,7); // YYYY-MM
+    (groups[key]=groups[key]||[]).push(f);
+  });
+  const keys=Object.keys(groups).sort().reverse(); // mes más reciente primero
+  $('facturas-list').innerHTML = keys.map((key,idx)=>{
+    const items = groups[key].slice().sort((a,b)=>b.fecha.localeCompare(a.fecha));
+    const [y,m] = key.split('-');
+    const mi = parseInt(m,10)-1;
+    const label = (mi>=0 && mi<12) ? `${MESES[mi]} ${y}` : 'Sin fecha';
+    const total = items.reduce((s,f)=>s+f.monto,0);
+    const pend = items.filter(f=>f.estado==='pendiente').length;
+    const rows = items.map(f=>`
+      <div class="fact-row">
+        <div class="fact-main">
+          <div class="fact-cli">${escHtml(f.cliente)}</div>
+          <div class="fact-meta">${fmtFecha(f.fecha)}</div>
+        </div>
+        <div class="fact-monto">${CLP(f.monto)}</div>
+        <button class="estado-pill ${f.estado==='pagada'?'pagada':'pendiente'}" title="Clic para cambiar estado" onclick="toggleFacturaEstado('${f.id}')">${f.estado==='pagada'?'Pagada':'Pendiente'}</button>
+        <div class="row-actions"><button class="icon-btn danger" title="Eliminar" onclick="deleteFactura('${f.id}')">×</button></div>
+      </div>`).join('');
+    return `<details class="month-group" ${idx===0?'open':''}>
+      <summary><span>${label}</span><span class="month-summary">${items.length} factura${items.length===1?'':'s'} · ${CLP(total)}${pend?` · ${pend} pendiente${pend===1?'':'s'}`:''}</span></summary>
+      <div class="month-body">${rows}</div>
+    </details>`;
+  }).join('');
 }
 
 function renderCostosDetail(){
