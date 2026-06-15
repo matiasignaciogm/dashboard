@@ -120,8 +120,34 @@ input[type=number]::placeholder{color:var(--text3)}
 .chart-h180{position:relative;height:180px;width:100%}
 /* FOOTER */
 .footer{padding-top:1.25rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:11px;color:var(--text3)}
-@media(max-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}.main-grid{grid-template-columns:1fr}.mgrid{grid-template-columns:repeat(3,1fr)}.esc-grid{grid-template-columns:1fr 1fr}.si-row{grid-template-columns:1fr}.pi{display:none}}
-@media(max-width:580px){.kpis{grid-template-columns:1fr 1fr}.mgrid{grid-template-columns:repeat(2,1fr)}.esc-grid{grid-template-columns:1fr}.header{flex-direction:column;align-items:flex-start;gap:.75rem}.header-right{align-items:flex-start;width:100%}}
+/* TEXT / DATE INPUTS */
+input[type=text],input[type=date]{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;font-family:var(--mono);font-size:13px;color:var(--text);outline:none;transition:border-color .15s}
+input[type=text]:focus,input[type=date]:focus{border-color:var(--accent)}
+input[type=text]::placeholder{color:var(--text3)}
+input[type=date]{color-scheme:dark}
+[data-theme="yellow"] input[type=date]{color-scheme:light}
+/* ESTADO TOGGLE */
+.estado-toggle{display:flex;gap:6px;margin-bottom:8px}
+.estado-btn{flex:1;padding:8px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:all .15s}
+.estado-btn.on.pend{background:var(--amber);color:#111;border-color:var(--amber)}
+.estado-btn.on.pag{background:var(--green);color:#111;border-color:var(--green)}
+/* 4-COL KPIS */
+.kpis4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.25rem}
+/* FACTURA ROW */
+.fact-row{display:flex;align-items:center;gap:.6rem;padding:8px 0;border-bottom:.5px solid var(--border);font-size:12px}
+.fact-row:last-child{border-bottom:none}
+.fact-main{flex:1;min-width:0}
+.fact-cli{color:var(--text);font-weight:500}
+.fact-meta{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px}
+.fact-monto{font-family:var(--mono);font-weight:500;white-space:nowrap}
+.days-badge{display:inline-block;font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;margin-left:6px;text-transform:uppercase;letter-spacing:.04em}
+.row-actions{display:flex;gap:6px;align-items:center}
+.icon-btn{background:none;border:1px solid var(--border2);color:var(--text3);border-radius:6px;width:24px;height:24px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+.icon-btn.danger:hover{border-color:var(--red);color:var(--red)}
+.empty-note{font-size:11px;color:var(--text3);font-family:var(--mono);text-align:center;padding:1rem 0}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}.kpis4{grid-template-columns:repeat(2,1fr)}.main-grid{grid-template-columns:1fr}.mgrid{grid-template-columns:repeat(3,1fr)}.esc-grid{grid-template-columns:1fr 1fr}.si-row{grid-template-columns:1fr}.pi{display:none}}
+@media(max-width:580px){.kpis{grid-template-columns:1fr 1fr}.kpis4{grid-template-columns:1fr 1fr}.mgrid{grid-template-columns:repeat(2,1fr)}.esc-grid{grid-template-columns:1fr}.header{flex-direction:column;align-items:flex-start;gap:.75rem}.header-right{align-items:flex-start;width:100%}}
 </style>
 </head>
 <body>
@@ -141,6 +167,7 @@ input[type=number]::placeholder{color:var(--text3)}
   <button class="tab on" onclick="setTab('t26')">2026</button>
   <button class="tab" onclick="setTab('tcmp')">2025 vs 2026</button>
   <button class="tab" onclick="setTab('t25')">2025 completo</button>
+  <button class="tab" onclick="setTab('tcli')">Clientes</button>
 </div>
 
 <!-- VIEW 2026 -->
@@ -158,7 +185,9 @@ input[type=number]::placeholder{color:var(--text3)}
   <div class="util-wrap" id="util26"></div>
   <p class="slabel">Escenarios segundo semestre</p>
   <div class="esc-grid" id="esc26"></div>
-  <div class="footer"><span>Sube el F29 PDF o ingresa venta neta + IVA del RCV · Datos guardados en tu navegador</span><span>MG POST SPA</span></div>
+  <p class="slabel">Provisión Global Complementario (estimado)</p>
+  <div class="util-wrap" id="igc26"></div>
+  <div class="footer"><span>Sube el F29 PDF o ingresa venta neta + IVA del RCV · Datos guardados en tu navegador y sincronizados en la nube</span><span>MG POST SPA</span></div>
 </div>
 
 <!-- VIEW COMPARE -->
@@ -191,6 +220,70 @@ input[type=number]::placeholder{color:var(--text3)}
   <div class="footer"><span>Datos extraídos de F29 oficiales SII · Total confirmado por F22 AT 2026</span><span>MG POST SPA</span></div>
 </div>
 
+<!-- VIEW CLIENTES / FLUJO DE CAJA -->
+<div id="tcli" class="view">
+  <div class="kpis4" id="kpiscli"></div>
+  <div class="main-grid">
+    <div>
+      <p class="slabel">Cuentas por cobrar</p>
+      <div class="card" id="cobrar-list"></div>
+      <p class="slabel">Concentración por cliente</p>
+      <div class="util-wrap" id="concentracion"></div>
+    </div>
+    <div>
+      <div class="card">
+        <p class="ct">📥 Importar RCV de Ventas (CSV del SII)</p>
+        <p style="font-size:11px;color:var(--text3);margin-bottom:8px">El mismo archivo que ya descargas para el IVA — SII → Registro de Compras y Ventas → Ventas → exportar CSV del período. Importa todas las facturas de una vez (filtra automáticamente tipo 33/34, ignora notas de crédito/débito).</p>
+        <div class="estado-toggle">
+          <button type="button" class="estado-btn pend on" id="rcv-btn-pend" onclick="setRcvEstado('pendiente')">Importar como Pendiente</button>
+          <button type="button" class="estado-btn pag" id="rcv-btn-pag" onclick="setRcvEstado('pagada')">Importar como Pagada</button>
+        </div>
+        <div class="upz" id="upzRcv"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="handleRcvDrop(event)">
+          <input type="file" accept=".csv" onchange="handleRcvFile(event)">
+          <div class="up-icon">📥</div>
+          <p class="up-t">Arrastra o clic — RCV Ventas CSV</p>
+          <p class="up-s">Una factura por fila, agrupadas por cliente<br>Se lee localmente, no sube a ningún servidor</p>
+          <div class="parsed" id="parsedRcv"></div>
+        </div>
+      </div>
+      <div class="card">
+        <p class="ct">Registrar factura</p>
+        <div class="estado-toggle">
+          <button type="button" class="estado-btn pend on" id="fc-btn-pend" onclick="setFacEstado('pendiente')">Pendiente</button>
+          <button type="button" class="estado-btn pag" id="fc-btn-pag" onclick="setFacEstado('pagada')">Pagada</button>
+        </div>
+        <div class="si-row" style="grid-template-columns:1fr">
+          <div>
+            <label class="si-lbl">Cliente</label>
+            <input type="text" id="fc-cliente" list="clientesList" placeholder="Nombre del cliente">
+            <datalist id="clientesList"></datalist>
+          </div>
+        </div>
+        <div class="si-row">
+          <div>
+            <label class="si-lbl">Monto neto</label>
+            <input type="number" id="fc-monto" placeholder="$0">
+          </div>
+          <div>
+            <label class="si-lbl">Fecha emisión</label>
+            <input type="date" id="fc-fecha">
+          </div>
+        </div>
+        <button class="sbtn" onclick="addFactura()">Agregar factura</button>
+        <p class="si-hint" style="margin-top:8px">Cada factura suma a la concentración por cliente. Si queda "Pendiente", aparece en cuentas por cobrar hasta que marques que se pagó.</p>
+      </div>
+      <div class="tnote">
+        <p class="tnote-t">↻ Independiente del F29</p>
+        <p class="tnote-d">Este registro es complementario al de la pestaña 2026 — sirve para ver de quién depende tu facturación y qué tienes pendiente de cobro, no reemplaza la venta neta declarada.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span>Registro manual de facturas · Sincronizado en la nube</span><span>MG POST SPA</span></div>
+</div>
+
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -214,6 +307,21 @@ const STACK = [
 const COSTOS = STACK.reduce((s,x)=>s+x.v,0);
 const META40=40000000, META50=50000000;
 
+// Tramos Impuesto Global Complementario (Art. 52 LIR) — tasas marginales en UTA anual.
+// Estables históricamente; lo que cambia cada año es el valor en pesos de la UTA.
+const TRAMOS_IGC = [
+  {hasta:13.5, tasa:0,     label:'0 – 13,5 UTA'},
+  {hasta:30,   tasa:0.04,  label:'13,5 – 30 UTA'},
+  {hasta:50,   tasa:0.08,  label:'30 – 50 UTA'},
+  {hasta:70,   tasa:0.135, label:'50 – 70 UTA'},
+  {hasta:90,   tasa:0.23,  label:'70 – 90 UTA'},
+  {hasta:120,  tasa:0.304, label:'90 – 120 UTA'},
+  {hasta:150,  tasa:0.355, label:'120 – 150 UTA'},
+  {hasta:Infinity, tasa:0.40, label:'Sobre 150 UTA'},
+];
+// UTA referencial ≈ UTM jun-2026 × 12. Se actualiza oficialmente en diciembre — ajustable abajo.
+const UTA_REF_DEFAULT = 858000;
+
 const D25 = {
   Enero:{venta:2030000,iva:366263,ppm:4060}, Febrero:{venta:1880000,iva:351133,ppm:3760},
   Marzo:{venta:6580000,iva:981560,ppm:13160}, Abril:{venta:3900000,iva:681325,ppm:7800},
@@ -229,13 +337,14 @@ let ST = {
     Marzo:{venta:5989130,iva:1065495,ppm:5639}, Abril:{venta:4516000,iva:845453,ppm:4516},
     Mayo:{venta:4300000,iva:817000,ppm:5375},
   },
-  mes:'Mayo', costosOpen:false, tab:'t26',
+  facturas: [],
+  mes:'Mayo', costosOpen:false, tab:'t26', utaRef: UTA_REF_DEFAULT,
   lastUpdate: new Date().toLocaleDateString('es-CL')
 };
 window.ST = ST;
 
 function save(){try{localStorage.setItem('mgpost_v4',JSON.stringify(ST))}catch(e){}}
-function load(){try{const s=localStorage.getItem('mgpost_v4');if(s){const p=JSON.parse(s);if(p.d26)ST.d26=p.d26;if(p.mes)ST.mes=p.mes;if(p.costosOpen)ST.costosOpen=p.costosOpen;if(p.lastUpdate)ST.lastUpdate=p.lastUpdate;}}catch(e){}}
+function load(){try{const s=localStorage.getItem('mgpost_v4');if(s){const p=JSON.parse(s);if(p.d26)ST.d26=p.d26;if(p.mes)ST.mes=p.mes;if(p.costosOpen)ST.costosOpen=p.costosOpen;if(p.lastUpdate)ST.lastUpdate=p.lastUpdate;if(p.utaRef)ST.utaRef=p.utaRef;if(p.facturas)ST.facturas=p.facturas;}}catch(e){}}
 
 const tv26=()=>MESES.reduce((s,m)=>s+(ST.d26[m]?ST.d26[m].venta:0),0);
 const md26=()=>MESES.filter(m=>ST.d26[m]).length;
@@ -257,12 +366,13 @@ function ritmoBadge(venta){
 /* ── TAB ── */
 function setTab(t){
   ST.tab=t;
-  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('on',['t26','tcmp','t25'][i]===t));
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('on',['t26','tcmp','t25','tcli'][i]===t));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   $(t).classList.add('on');
   if(t==='t26') render26();
   else if(t==='tcmp') renderCmp();
-  else render25();
+  else if(t==='t25') render25();
+  else renderCli();
 }
 
 /* ── RENDER 2026 ── */
@@ -378,6 +488,203 @@ function render26(){
     {cls:'c3',l:'Meta $45M',v:'$45.000.000',d:`${CLP(Math.round((45000000-total)/restantes))}/mes necesario`},
     {cls:'c4',l:'Meta $50M',v:'$50.000.000',d:`${CLP(nec50)}/mes necesario`},
   ].map(e=>`<div class="ec ${e.cls}"><p class="el">${e.l}</p><p class="ev">${e.v}</p><p class="ed">${e.d}</p></div>`).join('');
+
+  renderIGC(total, md);
+}
+
+/* ── PROVISIÓN GLOBAL COMPLEMENTARIO ── */
+function renderIGC(total, md){
+  const utilAcum = total - COSTOS*md;
+  const utilProy = md>0 ? Math.round(utilAcum/md*12) : 0;
+  const utaRef = ST.utaRef || UTA_REF_DEFAULT;
+  const utaProy = utilProy>0 ? utilProy/utaRef : 0;
+  const tramo = TRAMOS_IGC.find(t=>utaProy<=t.hasta) || TRAMOS_IGC[TRAMOS_IGC.length-1];
+  const estimado = utilProy>0 ? Math.round(utilProy*tramo.tasa) : 0;
+
+  const rows = TRAMOS_IGC.map(t=>{
+    const isCurrent = t===tramo;
+    const limitPesos = t.hasta===Infinity ? null : Math.round(t.hasta*utaRef);
+    return `<div class="ur"><span class="ul" style="${isCurrent?'color:var(--accent);font-weight:600':''}">${t.label}${isCurrent?' ←':''}</span><div class="ub"><div class="uf" style="width:${(t.tasa/0.40*100)}%;background:${isCurrent?'var(--accent)':'var(--border2)'}"></div></div><span class="uv">${(t.tasa*100).toFixed(1)}%${limitPesos!==null?' · hasta '+CLP(limitPesos):''}</span></div>`;
+  }).join('');
+
+  $('igc26').innerHTML = `
+    <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:8px">
+      Utilidad acumulada ${md} mes${md===1?'':'es'}: <strong style="color:var(--text2)">${CLP(utilAcum)}</strong> ·
+      proyección anual: <strong style="color:${utilProy>=0?'var(--text2)':'var(--red)'}">${CLP(utilProy)}</strong>
+    </div>
+    ${rows}
+    <div class="si-row" style="margin-top:10px;align-items:end">
+      <div>
+        <label class="si-lbl">UTA de referencia (anual)</label>
+        <input type="number" id="si-uta" value="${utaRef}" placeholder="${UTA_REF_DEFAULT}" onchange="setUtaRef(this.value)">
+        <p class="si-hint">≈ UTM de diciembre × 12. Valor oficial se publica en diciembre — ajusta aquí cuando lo confirmes.</p>
+      </div>
+      <div>
+        <label class="si-lbl">Provisión estimada (conservadora)</label>
+        <p class="mf" style="margin-top:6px">${CLP(estimado)}</p>
+        <p class="si-hint">Tramo proyectado: ${tramo.label} · tasa marginal ${(tramo.tasa*100).toFixed(1)}%</p>
+      </div>
+    </div>
+    <div class="tnote" style="margin-top:10px;margin-bottom:0">
+      <p class="tnote-t">⚠ Estimación referencial</p>
+      <p class="tnote-d">Aplica la tasa marginal del tramo sobre la utilidad proyectada, sin descontar la rebaja propia de cada tramo — por eso tiende a <strong style="color:var(--accent)">sobreestimar</strong>, que es lo seguro para provisionar. Confirma la cifra exacta con tu contador antes de abril.</p>
+    </div>
+  `;
+}
+
+function setUtaRef(v){
+  const n=parseFloat(v);
+  ST.utaRef = n>0 ? n : UTA_REF_DEFAULT;
+  save(); renderIGC(tv26(), md26());
+  window.fbPush?.();
+}
+
+/* ── CLIENTES / CUENTAS POR COBRAR ── */
+let facEstado='pendiente';
+function setFacEstado(e){
+  facEstado=e;
+  $('fc-btn-pend').classList.toggle('on', e==='pendiente');
+  $('fc-btn-pag').classList.toggle('on', e==='pagada');
+}
+function escHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtFecha(f){ const [y,m,d]=f.split('-'); return `${d}-${m}-${y.slice(2)}`; }
+function diffDias(fecha){ return Math.floor((Date.now()-new Date(fecha+'T00:00:00').getTime())/86400000); }
+
+function addFactura(){
+  const cliente=$('fc-cliente').value.trim();
+  const monto=parseFloat($('fc-monto').value);
+  const fecha=$('fc-fecha').value || new Date().toISOString().slice(0,10);
+  if(!cliente){ $('fc-cliente').focus(); return; }
+  if(!monto || monto<=0){ $('fc-monto').focus(); return; }
+  ST.facturas.push({id:'f'+Date.now(), cliente, monto, fecha, estado:facEstado});
+  ST.lastUpdate=new Date().toLocaleDateString('es-CL');
+  $('fc-cliente').value=''; $('fc-monto').value='';
+  save(); renderCli();
+  window.fbPush?.();
+}
+function toggleFacturaEstado(id){
+  const f=ST.facturas.find(x=>x.id===id); if(!f) return;
+  f.estado = f.estado==='pendiente'?'pagada':'pendiente';
+  save(); renderCli();
+  window.fbPush?.();
+}
+function deleteFactura(id){
+  if(!confirm('¿Eliminar esta factura del registro?')) return;
+  ST.facturas = ST.facturas.filter(x=>x.id!==id);
+  save(); renderCli();
+  window.fbPush?.();
+}
+
+/* ── IMPORTAR RCV DE VENTAS (CSV SII) ── */
+let rcvImportEstado='pendiente';
+function setRcvEstado(e){
+  rcvImportEstado=e;
+  $('rcv-btn-pend').classList.toggle('on', e==='pendiente');
+  $('rcv-btn-pag').classList.toggle('on', e==='pagada');
+}
+function setZoneRcv(cls,title,preview=''){
+  const z=$('upzRcv');if(!z)return;
+  z.className='upz '+cls;
+  const t=z.querySelector('.up-t');if(t)t.textContent=title;
+  const p=$('parsedRcv');if(p){p.style.display=preview?'block':'none';p.textContent=preview;}
+}
+// RCV Ventas SII: Nro;Tipo Doc;Tipo Venta;Rut cliente;Razon Social;Folio;Fecha Docto;...;Monto Exento;Monto Neto;Monto IVA;Monto total;...
+// índices 0-based: 1=Tipo Doc, 3=Rut, 4=Razon Social, 5=Folio, 6=Fecha Docto (DD/MM/YYYY), 11=Monto Neto
+function parseRCV(text){
+  const lines = text.split(/\r?\n/).filter(l=>l.trim().length>0);
+  const out=[]; let skipped=0;
+  for(let i=1;i<lines.length;i++){ // fila 0 = encabezado
+    const c = lines[i].split(';');
+    if(c.length<14) continue;
+    const tipoDoc = (c[1]||'').trim();
+    if(tipoDoc!=='33' && tipoDoc!=='34'){ skipped++; continue; } // solo facturas (afecta/exenta), omite NC/ND y otros
+    const rut = (c[3]||'').trim();
+    const cliente = (c[4]||'').trim();
+    const folio = (c[5]||'').trim();
+    const fechaRaw = (c[6]||'').trim();
+    const montoNeto = parseFloat(c[11])||0;
+    if(!cliente || montoNeto<=0){ skipped++; continue; }
+    const [d,m,y] = fechaRaw.split('/');
+    const fecha = (d&&m&&y) ? `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}` : new Date().toISOString().slice(0,10);
+    out.push({id:`rcv-${rut}-${folio}`, cliente, monto:montoNeto, fecha});
+  }
+  return {rows:out, skipped};
+}
+async function handleRCV(file){
+  setZoneRcv('proc','Leyendo CSV…');
+  try{
+    const text = await file.text();
+    const {rows, skipped} = parseRCV(text);
+    if(rows.length===0){ setZoneRcv('err','No se encontraron facturas (tipo 33/34) en el archivo'); return; }
+    ST.facturas = ST.facturas||[];
+    const existing = new Set(ST.facturas.map(f=>f.id));
+    let added=0, dup=0, total=0;
+    rows.forEach(r=>{
+      if(existing.has(r.id)){ dup++; return; }
+      ST.facturas.push({id:r.id, cliente:r.cliente, monto:r.monto, fecha:r.fecha, estado:rcvImportEstado});
+      existing.add(r.id);
+      added++; total+=r.monto;
+    });
+    ST.lastUpdate=new Date().toLocaleDateString('es-CL');
+    save(); renderCli();
+    window.fbPush?.();
+    setZoneRcv('ok', `✓ ${added} factura${added===1?'':'s'} importada${added===1?'':'s'}`,
+      [added?`Total: ${CLP(total)}`:'', dup?`${dup} ya estaban registradas — omitidas`:'', skipped?`${skipped} fila${skipped===1?'':'s'} no son facturas (NC/ND u otros) — omitidas`:''].filter(Boolean).join('\n'));
+  }catch(e){ console.warn(e); setZoneRcv('err','Error al leer el archivo — revisa que sea el CSV del RCV de Ventas'); }
+}
+function handleRcvFile(e){const f=e.target.files[0];if(f)handleRCV(f);}
+function handleRcvDrop(e){e.preventDefault();const f=e.dataTransfer.files[0];if(f)handleRCV(f);}
+
+function renderCli(){
+  if(!$('fc-fecha').value) $('fc-fecha').value = new Date().toISOString().slice(0,10);
+  const facturas = ST.facturas||[];
+  const pendientes = facturas.filter(f=>f.estado==='pendiente').sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const totalPendiente = pendientes.reduce((s,f)=>s+f.monto,0);
+
+  // datalist de clientes
+  const clientes=[...new Set(facturas.map(f=>f.cliente))];
+  $('clientesList').innerHTML = clientes.map(c=>`<option value="${escHtml(c)}">`).join('');
+
+  // concentración por cliente
+  const porCliente={};
+  facturas.forEach(f=>{ porCliente[f.cliente]=(porCliente[f.cliente]||0)+f.monto; });
+  const totalFacturado = Object.values(porCliente).reduce((s,v)=>s+v,0);
+  const ranking = Object.entries(porCliente).sort((a,b)=>b[1]-a[1]);
+  const topPct = ranking.length && totalFacturado>0 ? Math.round(ranking[0][1]/totalFacturado*100) : 0;
+
+  $('kpiscli').innerHTML=`
+    <div class="kpi"><p class="kl">Por cobrar</p><p class="kv" style="color:${totalPendiente>0?'var(--amber)':'var(--text)'}">${CLP(totalPendiente)}</p><p class="ks">${pendientes.length} factura${pendientes.length===1?'':'s'}</p></div>
+    <div class="kpi"><p class="kl">Facturado registrado</p><p class="kv">${CLP(totalFacturado)}</p><p class="ks">${facturas.length} factura${facturas.length===1?'':'s'}</p></div>
+    <div class="kpi"><p class="kl">Cliente principal</p><p class="kv" style="font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ranking.length?escHtml(ranking[0][0]):'—'}</p><p class="ks" style="color:${topPct>=30?'var(--red)':topPct>=20?'var(--amber)':'var(--text3)'}">${ranking.length?topPct+'% del total':'Sin datos'}</p></div>
+    <div class="kpi"><p class="kl">Clientes registrados</p><p class="kv">${ranking.length}</p><p class="ks">${ranking.length>0?'Activos':'Sin datos'}</p></div>
+  `;
+
+  $('cobrar-list').innerHTML = pendientes.length===0
+    ? `<p class="empty-note">No tienes facturas pendientes de cobro registradas.</p>`
+    : pendientes.map(f=>{
+        const dias=diffDias(f.fecha);
+        const dCls = dias>60?'var(--red)':dias>30?'var(--amber)':'var(--green)';
+        const dBg = dias>60?'rgba(255,77,109,.12)':dias>30?'rgba(255,179,71,.12)':'rgba(61,255,160,.12)';
+        return `<div class="fact-row">
+          <div class="fact-main">
+            <div class="fact-cli">${escHtml(f.cliente)}</div>
+            <div class="fact-meta">Emitida ${fmtFecha(f.fecha)} <span class="days-badge" style="color:${dCls};background:${dBg}">${dias}d</span></div>
+          </div>
+          <div class="fact-monto">${CLP(f.monto)}</div>
+          <div class="row-actions">
+            <button class="icon-btn" title="Marcar como pagada" onclick="toggleFacturaEstado('${f.id}')">✓</button>
+            <button class="icon-btn danger" title="Eliminar" onclick="deleteFactura('${f.id}')">×</button>
+          </div>
+        </div>`;
+      }).join('');
+
+  $('concentracion').innerHTML = ranking.length===0
+    ? `<p class="empty-note">Registra facturas para ver la concentración por cliente.</p>`
+    : ranking.map(([cliente,monto])=>{
+        const pct = totalFacturado>0 ? Math.round(monto/totalFacturado*100) : 0;
+        const color = pct>=30?'var(--red)':pct>=20?'var(--amber)':'var(--accent)';
+        return `<div class="ur"><span class="ul" style="min-width:140px;color:var(--text2)">${escHtml(cliente)}</span><div class="ub"><div class="uf" style="width:${pct}%;background:${color}"></div></div><span class="uv">${pct}% · ${CLP(monto)}</span></div>`;
+      }).join('') + (topPct>=25 ? `<div class="tnote" style="margin-top:10px;margin-bottom:0"><p class="tnote-t">⚠ Concentración alta</p><p class="tnote-d"><strong style="color:var(--accent)">${escHtml(ranking[0][0])}</strong> representa el ${topPct}% de tu facturación registrada. Vale la pena priorizar diversificación si este porcentaje sigue creciendo.</p></div>` : '');
 }
 
 function renderCostosDetail(){
@@ -585,12 +892,24 @@ function setSyncUI(state){
 
 let db=null, dashRef=null, pushing=false;
 
+function mergeFacturas(remoteList){
+  const local = window.ST.facturas||[];
+  const remote = remoteList||[];
+  const map={};
+  local.forEach(f=>map[f.id]=f);
+  remote.forEach(f=>map[f.id]=f); // remoto gana en conflictos
+  return Object.values(map);
+}
+
 function mergeRemote(remote){
   if(!remote) return;
   window.ST.d26 = {...(window.ST.d26||{}), ...(remote.d26||{})};
   if(remote.lastUpdate) window.ST.lastUpdate = remote.lastUpdate;
+  if(remote.utaRef) window.ST.utaRef = remote.utaRef;
+  window.ST.facturas = mergeFacturas(remote.facturas);
   window.save();
   window.render26();
+  window.renderCli?.();
 }
 
 async function initSync(){
@@ -605,7 +924,7 @@ async function initSync(){
       mergeRemote(snap.data());
     } else {
       // primera vez: sube lo que ya hay guardado en este dispositivo
-      await setDoc(dashRef, {d26: window.ST.d26, lastUpdate: window.ST.lastUpdate});
+      await setDoc(dashRef, {d26: window.ST.d26, lastUpdate: window.ST.lastUpdate, utaRef: window.ST.utaRef, facturas: window.ST.facturas});
     }
     setSyncUI('ok');
 
@@ -625,7 +944,7 @@ window.fbPush = async function(){
   if(!db||!dashRef) return;
   try{
     pushing=true;
-    await setDoc(dashRef, {d26: window.ST.d26, lastUpdate: window.ST.lastUpdate});
+    await setDoc(dashRef, {d26: window.ST.d26, lastUpdate: window.ST.lastUpdate, utaRef: window.ST.utaRef, facturas: window.ST.facturas});
     setSyncUI('ok');
   }catch(e){ console.warn('Firestore push',e); setSyncUI('off'); }
   finally{ pushing=false; }
