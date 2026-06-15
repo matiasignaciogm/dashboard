@@ -53,6 +53,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);padding:2rem
 .mc.act{border-color:var(--accent);background:var(--bg3)}
 .mc.act::before{background:var(--accent)}
 .mc.emp{opacity:.4}
+.mc.act.emp{opacity:1}
 .mn{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:7px;display:flex;justify-content:space-between}
 .mck{color:var(--green);font-size:10px}
 .mf{font-family:var(--mono);font-size:1rem;font-weight:500;margin-bottom:5px;line-height:1}
@@ -491,17 +492,25 @@ function render26(){
     </div>
     <div class="card">
       <p class="ct">✏️ Ingreso rápido — ${ST.mes}</p>
-      <p style="font-size:11px;color:var(--text3);margin-bottom:8px">Desde el RCV o el F29, solo dos números:</p>
+      <div class="upz" id="upzSi"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="handleSiDrop(event)">
+        <input type="file" accept=".csv" onchange="handleSiFile(event)">
+        <div class="up-icon">📊</div>
+        <p class="up-t">Arrastra o clic — RCV Ventas CSV</p>
+        <p class="up-s">Calcula venta neta e IVA preliminares del mes<br>Útil si aún no tienes el F29</p>
+        <div class="parsed" id="parsedSi"></div>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin:10px 0 8px">O ingresa los valores manualmente:</p>
       <div class="si-row">
         <div>
           <label class="si-lbl">Venta neta del mes</label>
           <input type="number" id="si-v" value="${d?d.venta:''}" placeholder="Ej: 4.300.000">
-          <p class="si-hint">RCV → "Monto Neto"<br>F29 → código 563</p>
         </div>
         <div>
           <label class="si-lbl">IVA pagado</label>
           <input type="number" id="si-i" value="${d?d.iva:''}" placeholder="Ej: 817.000">
-          <p class="si-hint">RCV → "Monto IVA"<br>F29 → código 089</p>
         </div>
       </div>
       <button class="sbtn" onclick="saveSimple()">Guardar ${ST.mes}</button>
@@ -676,6 +685,53 @@ async function handleRCV(file){
 }
 function handleRcvFile(e){const f=e.target.files[0];if(f)handleRCV(f);}
 function handleRcvDrop(e){e.preventDefault();const f=e.dataTransfer.files[0];if(f)handleRCV(f);}
+
+/* ── INGRESO RÁPIDO: precalcular venta/IVA desde RCV (preliminar, sin F29) ── */
+function parseRCVTotales(text){
+  const lines = text.split(/\r?\n/).filter(l=>l.trim().length>0);
+  let neto=0, iva=0, count=0, skipped=0;
+  const meses=new Set();
+  for(let i=1;i<lines.length;i++){
+    const c = lines[i].split(';');
+    if(c.length<14) continue;
+    const tipoDoc=(c[1]||'').trim();
+    if(tipoDoc!=='33' && tipoDoc!=='34'){ skipped++; continue; }
+    const mNeto=parseFloat(c[11])||0;
+    if(mNeto<=0){ skipped++; continue; }
+    const mIva=parseFloat(c[12])||0;
+    const fechaRaw=(c[6]||'').trim();
+    const [,m,y]=fechaRaw.split('/');
+    if(m&&y) meses.add(`${y}-${m.padStart(2,'0')}`);
+    neto+=mNeto; iva+=mIva; count++;
+  }
+  return {neto, iva, count, skipped, meses:[...meses]};
+}
+function setZoneSi(cls,title,preview=''){
+  const z=$('upzSi');if(!z)return;
+  z.className='upz '+cls;
+  const t=z.querySelector('.up-t');if(t)t.textContent=title;
+  const p=$('parsedSi');if(p){p.style.display=preview?'block':'none';p.textContent=preview;}
+}
+function handleRCVPreliminar(file){
+  setZoneSi('proc','Leyendo CSV…');
+  file.text().then(text=>{
+    const {neto, iva, count, skipped, meses} = parseRCVTotales(text);
+    if(count===0){ setZoneSi('err','No se encontraron facturas (tipo 33/34) en el archivo'); return; }
+    $('si-v').value = neto;
+    $('si-i').value = iva;
+    let avisoMes = '';
+    if(meses.length===1){
+      const mi = parseInt(meses[0].split('-')[1],10)-1;
+      const mesDetectado = MESES[mi]||'';
+      if(mesDetectado && mesDetectado!==ST.mes) avisoMes = `⚠ Este RCV es de ${mesDetectado}, pero tienes ${ST.mes} seleccionado.`;
+    }
+    setZoneSi('ok', `✓ ${count} factura${count===1?'':'s'} · Neto ${CLP(neto)} · IVA ${CLP(iva)}`,
+      [avisoMes, skipped?`${skipped} fila${skipped===1?'':'s'} omitida${skipped===1?'':'s'} (NC/ND u otros)`:'',
+       'Revisa los valores y presiona "Guardar" para confirmar.'].filter(Boolean).join('\n'));
+  }).catch(e=>{ console.warn(e); setZoneSi('err','Error al leer el archivo — revisa que sea el CSV del RCV de Ventas'); });
+}
+function handleSiFile(e){const f=e.target.files[0];if(f)handleRCVPreliminar(f);}
+function handleSiDrop(e){e.preventDefault();const f=e.dataTransfer.files[0];if(f)handleRCVPreliminar(f);}
 
 const ANIO26='2026';
 function setConcFiltro(f){
