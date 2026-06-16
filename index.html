@@ -1475,8 +1475,6 @@ window.finLogout = function() {
   const cxD=finEl('finChartDist');
   if(cxD) finChDist=new Chart(cxD,{type:'doughnut',data:{labels:dl,datasets:[{data:dd,backgroundColor:dc,borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#8a8a96',font:{size:10},boxWidth:10,padding:8}},tooltip:{backgroundColor:'#111',callbacks:{label:c=>` ${c.label}: ${CLP(c.raw)}`}}}}});
 };
-
-};
 </script>
 </body>
 </html>
