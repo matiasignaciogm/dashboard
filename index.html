@@ -407,6 +407,10 @@ input[type=date]{color-scheme:dark}
           <div class="chart-h240"><canvas id="finChartExc"></canvas></div>
         </div>
         <div class="chart-box">
+          <h3>Evolución de gastos por categoría</h3>
+          <div class="chart-h240"><canvas id="finChartGastos"></canvas></div>
+        </div>
+        <div class="chart-box">
           <h3>Distribución de gastos — último mes</h3>
           <div class="chart-h240"><canvas id="finChartDist"></canvas></div>
         </div>
@@ -434,8 +438,14 @@ input[type=date]{color-scheme:dark}
           <p id="fin-nota" style="font-size:11px;color:var(--text2);line-height:1.5">—</p>
         </div>
         <div class="tnote">
-          <p class="tnote-t">Retiro objetivo</p>
-          <p class="tnote-d">$2.500.000/mes fijo desde jun 2026. Sin provisión de impuestos (F22 AT2025 y AT2026: $0 a pagar). Crédito consumo termina ago 2026.</p>
+          <p class="tnote-t">Presupuesto objetivo (jul 2026+)</p>
+          <p class="tnote-d">
+            Arriendo+GC $1.000.000 · Servicios $65.000<br>
+            Feria+super $286.000 · Oso $20.000<br>
+            Cannabis $230.000 · TC variable ~$308.000<br>
+            Aporte Amanda −$250.000<br>
+            <strong style="color:var(--green)">Neto ~$1.702.000 · Excedente ~$798.000</strong>
+          </p>
         </div>
       </div>
     </div>
@@ -457,9 +467,14 @@ input[type=date]{color-scheme:dark}
             <p class="ct" style="margin-top:.75rem">Gastos fijos</p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.75rem">
               <div><label class="si-lbl">Arriendo</label><input type="number" id="freg-arriendo" placeholder="800000"></div>
+              <div><label class="si-lbl">Gasto común edificio</label><input type="number" id="freg-gc" placeholder="200000"></div>
               <div><label class="si-lbl">Crédito consumo</label><input type="number" id="freg-credito" placeholder="0"><span style="font-size:10px;color:var(--text3);font-family:var(--mono)">0 si no hubo cuota este mes</span></div>
+              <div><label class="si-lbl">Servicios (luz+agua+internet)</label><input type="number" id="freg-servicios" placeholder="65000"></div>
               <div><label class="si-lbl">Cannabis</label><input type="number" id="freg-cannabis" placeholder="230000"></div>
               <div><label class="si-lbl">Ayuda mamá</label><input type="number" id="freg-mama" placeholder="0"></div>
+              <div><label class="si-lbl">Alimentación (feria + super)</label><input type="number" id="freg-alim" placeholder="286000"></div>
+              <div><label class="si-lbl">Oso (perro)</label><input type="number" id="freg-oso" placeholder="20000"></div>
+              <div><label class="si-lbl">Aporte Amanda ↓ resta</label><input type="number" id="freg-amanda" placeholder="250000"><span style="font-size:10px;color:var(--text3);font-family:var(--mono)">Se resta del total</span></div>
             </div>
 
             <p class="ct" style="margin-top:.75rem">Tarjeta de crédito — por categoría</p>
@@ -501,8 +516,8 @@ input[type=date]{color-scheme:dark}
             <div id="freg-hist" style="max-height:300px;overflow-y:auto"></div>
           </div>
           <div class="tnote">
-            <p class="tnote-t">Referencia — promedios ene-may 2026</p>
-            <p class="tnote-d">Retiro: $2.826.673 · Arriendo: $693k · Delivery: $145k · Cannabis: $230k · Cuotas TC: $247k</p>
+            <p class="tnote-t">Presupuesto objetivo (jul 2026+)</p>
+            <p class="tnote-d">Arriendo+GC $1M · Servicios $65k · Feria+super $286k · Cannabis $230k · Oso $20k · TC ~$308k · Amanda −$250k → <strong>Neto ~$1.702.000 · Excedente ~$798.000</strong></p>
           </div>
         </div>
       </div>
@@ -1417,16 +1432,17 @@ const FIN_H = {
   '2026-05':{ retiro:3158000, arriendo:701850, credito_consumo:0, cannabis:365000, mama:30000, tc_delivery:30000, tc_transporte:18000, tc_suscripciones:36000, tc_almacen:0, tc_deportes:17000, tc_cuotas:168000, tc_otros:60000, ahorro_saldo:4225000, tc_deuda:560000, notas:'TC deuda $560k — plan liquidar jul-ago con excedente.' },
 };
 let FIN = { ...FIN_H };
-let finChExc=null, finChDist=null;
+let finChExc=null, finChDist=null, finChGastos=null;
 
 const finML = {'01':'Ene','02':'Feb','03':'Mar','04':'Abr','05':'May','06':'Jun','07':'Jul','08':'Ago','09':'Sep','10':'Oct','11':'Nov','12':'Dic'};
 const finLbl = k=>{ const[y,m]=k.split('-'); return `${finML[m]} ${y}`; };
 const finKeys = ()=>Object.keys(FIN).sort();
 const finCmp = m=>{
-  const gf=(m.arriendo||0)+(m.credito_consumo||0)+(m.mama||0);
+  const gf=(m.arriendo||0)+(m.gc||0)+(m.credito_consumo||0)+(m.mama||0)+(m.servicios||0)+(m.alim||0)+(m.oso||0);
   const gtc=(m.tc_delivery||0)+(m.tc_transporte||0)+(m.tc_suscripciones||0)+(m.tc_almacen||0)+(m.tc_deportes||0)+(m.tc_cuotas||0)+(m.tc_otros||0);
-  const gt=gf+(m.cannabis||0)+gtc;
-  return {gf,gtc,gt,exc:(m.retiro||0)-gt};
+  const amanda=(m.amanda||0);
+  const gt=gf+(m.cannabis||0)+gtc-amanda;
+  return {gf,gtc,amanda,gt,exc:(m.retiro||0)-gt};
 };
 const finEl = id=>document.getElementById(id);
 
@@ -1518,19 +1534,20 @@ function fregV(id){ return parseFloat(document.getElementById(id)?.value)||0; }
 
 function fregPreview(){
   const ret=fregV('freg-retiro');
-  const fijos=fregV('freg-arriendo')+fregV('freg-credito')+fregV('freg-mama')+fregV('freg-cannabis');
+  const fijos=fregV('freg-arriendo')+fregV('freg-gc')+fregV('freg-credito')+fregV('freg-mama')+fregV('freg-cannabis')+fregV('freg-servicios')+fregV('freg-alim')+fregV('freg-oso');
   const tc=fregV('freg-delivery')+fregV('freg-transporte')+fregV('freg-suscripciones')+fregV('freg-almacen')+fregV('freg-deportes')+fregV('freg-cuotas')+fregV('freg-otros');
-  const exc=ret-fijos-tc;
+  const amanda=fregV('freg-amanda');
+  const exc=ret-fijos-tc+amanda;
   const el=id=>document.getElementById(id);
   el('fprev-retiro').textContent=ret?CLP(ret):'—';
-  el('fprev-fijos').textContent=(fregV('freg-arriendo')+fregV('freg-credito'))?CLP(fregV('freg-arriendo')+fregV('freg-credito')):'—';
-  el('fprev-var').textContent=(fregV('freg-cannabis')+fregV('freg-mama'))?CLP(fregV('freg-cannabis')+fregV('freg-mama')):'—';
+  el('fprev-fijos').textContent=fijos?CLP(fijos):'—';
+  el('fprev-var').textContent=amanda?`${CLP(tc)} (−${CLP(amanda)} Amanda)`:'—';
   el('fprev-tc').textContent=tc?CLP(tc):'—';
   el('fprev-exc').textContent=ret?CLP(exc):'—';
   if(el('fprev-exc')) el('fprev-exc').style.color=exc>=0?'var(--green)':'var(--red)';
 }
 
-['freg-retiro','freg-arriendo','freg-credito','freg-cannabis','freg-mama','freg-delivery','freg-transporte','freg-suscripciones','freg-almacen','freg-deportes','freg-cuotas','freg-otros'].forEach(id=>{
+['freg-retiro','freg-arriendo','freg-gc','freg-credito','freg-servicios','freg-cannabis','freg-mama','freg-alim','freg-oso','freg-amanda','freg-delivery','freg-transporte','freg-suscripciones','freg-almacen','freg-deportes','freg-cuotas','freg-otros'].forEach(id=>{
   document.getElementById(id)?.addEventListener('input', fregPreview);
 });
 
@@ -1552,8 +1569,9 @@ window.finCargarEnForm=function(key){
   const m=FIN[key]; if(!m) return;
   const sv=(id,val)=>{ const el=document.getElementById(id); if(el) el.value=val||0; };
   document.getElementById('freg-mes').value=key;
-  sv('freg-retiro',m.retiro); sv('freg-arriendo',m.arriendo); sv('freg-credito',m.credito_consumo);
-  sv('freg-cannabis',m.cannabis); sv('freg-mama',m.mama);
+  sv('freg-retiro',m.retiro); sv('freg-arriendo',m.arriendo); sv('freg-gc',m.gc); sv('freg-credito',m.credito_consumo);
+  sv('freg-servicios',m.servicios); sv('freg-cannabis',m.cannabis); sv('freg-mama',m.mama);
+  sv('freg-alim',m.alim); sv('freg-oso',m.oso); sv('freg-amanda',m.amanda);
   sv('freg-delivery',m.tc_delivery); sv('freg-transporte',m.tc_transporte);
   sv('freg-suscripciones',m.tc_suscripciones); sv('freg-almacen',m.tc_almacen);
   sv('freg-deportes',m.tc_deportes); sv('freg-cuotas',m.tc_cuotas); sv('freg-otros',m.tc_otros);
@@ -1566,8 +1584,9 @@ window.finGuardarMes=async function(){
   const key=document.getElementById('freg-mes')?.value;
   if(!key){ finMsgReg('Selecciona un mes','red'); return; }
   const data={
-    retiro:fregV('freg-retiro'), arriendo:fregV('freg-arriendo'), credito_consumo:fregV('freg-credito'),
-    cannabis:fregV('freg-cannabis'), mama:fregV('freg-mama'),
+    retiro:fregV('freg-retiro'), arriendo:fregV('freg-arriendo'), gc:fregV('freg-gc'), credito_consumo:fregV('freg-credito'),
+    servicios:fregV('freg-servicios'), cannabis:fregV('freg-cannabis'), mama:fregV('freg-mama'),
+    alim:fregV('freg-alim'), oso:fregV('freg-oso'), amanda:fregV('freg-amanda'),
     tc_delivery:fregV('freg-delivery'), tc_transporte:fregV('freg-transporte'),
     tc_suscripciones:fregV('freg-suscripciones'), tc_almacen:fregV('freg-almacen'),
     tc_deportes:fregV('freg-deportes'), tc_cuotas:fregV('freg-cuotas'), tc_otros:fregV('freg-otros'),
@@ -1640,6 +1659,33 @@ window.finRender=function(){
     plugins:{legend:{labels:{color:'#8a8a96',font:{family:"'DM Mono',monospace",size:11}}},tooltip:{backgroundColor:'#111',borderColor:'#2E2E2E',borderWidth:1,callbacks:{label:c=>' '+CLP(c.raw)}}},
     scales:{x:{grid:{color:'#1C1C1C'},ticks:{color:'#55555f',font:{size:10}}},y:{grid:{color:'#1C1C1C'},ticks:{color:'#55555f',font:{size:10},callback:v=>'$'+(v/1000000).toFixed(1)+'M'}}}
   };
+
+  // Gráfico stacked: evolución de gastos por categoría
+  const gastoCats=[
+    {k:'arriendo',  l:'Arriendo+GC', fn:m=>(m.arriendo||0)+(m.gc||0), c:'#4da6ff'},
+    {k:'alim',      l:'Alimentación', fn:m=>(m.alim||0)+(m.tc_almacen||0), c:'#3dffa0'},
+    {k:'tc_delivery',l:'Delivery',   fn:m=>m.tc_delivery||0, c:'#ff4d6d'},
+    {k:'cannabis',  l:'Cannabis',    fn:m=>m.cannabis||0, c:'#c084fc'},
+    {k:'tc_cuotas', l:'Cuotas TC',   fn:m=>m.tc_cuotas||0, c:'#3D3D3D'},
+    {k:'servicios', l:'Servicios',   fn:m=>(m.servicios||0)+(m.credito_consumo||0), c:'#ffb347'},
+    {k:'tc_otros',  l:'Otros',       fn:m=>(m.tc_transporte||0)+(m.tc_suscripciones||0)+(m.tc_deportes||0)+(m.tc_otros||0)+(m.mama||0)+(m.oso||0), c:'#55555f'},
+  ];
+  try{finChGastos&&finChGastos.destroy();}catch(e){}
+  const cxG=finEl('finChartGastos');
+  if(cxG) finChGastos=new Chart(cxG,{
+    type:'bar',
+    data:{
+      labels:keys.map(finLbl),
+      datasets:gastoCats.map(cat=>({
+        label:cat.l,
+        data:keys.map(k=>cat.fn(FIN[k])),
+        backgroundColor:cat.c,
+        stack:'stack',
+        borderRadius:0
+      }))
+    },
+    options:{...chOpts,plugins:{...chOpts.plugins,legend:{position:'bottom',labels:{color:'#8a8a96',font:{size:10},boxWidth:10,padding:6}}}}
+  });
   const excs=keys.map(k=>finCmp(FIN[k]).exc);
   try{finChExc&&finChExc.destroy();}catch(e){}
   const cxE=finEl('finChartExc');
