@@ -459,6 +459,38 @@ input[type=date]{color-scheme:dark}
         </div>
       </div>
     </div>
+    <!-- PRESUPUESTO RESUMEN -->
+    <div class="chart-box" style="margin-top:1.25rem">
+      <h3>Presupuesto objetivo <span id="fin-pres-label" style="font-weight:400;color:var(--text3);font-size:10px">jul 2026+</span>
+        <span style="display:flex;gap:6px">
+          <button class="period-btn on" id="pbtn-jul" onclick="finPresView('jul')" style="font-size:10px;padding:4px 10px">Jul–Ago</button>
+          <button class="period-btn" id="pbtn-sep" onclick="finPresView('sep')" style="font-size:10px;padding:4px 10px">Sep+ (sin crédito)</button>
+        </span>
+      </h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+        <div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px" id="fin-pres-tabla">
+          </table>
+        </div>
+        <div>
+          <div class="fin-meta">
+            <div class="fin-ml">Excedente estimado</div>
+            <div class="fin-mval pos" id="fin-pres-exc">—</div>
+            <div class="fin-msub" id="fin-pres-exc-sub">del retiro de $2.500.000</div>
+            <div class="fin-bbg"><div class="fin-bfg" id="fin-pres-exc-bar" style="width:0%;background:var(--green)"></div></div>
+          </div>
+          <div class="fin-meta">
+            <div class="fin-ml">Distribución hogar (vivienda+servicios)</div>
+            <div style="font-size:11px;font-family:var(--mono);line-height:2;margin-top:4px">
+              <div class="dr"><span class="dl">Matías</span><span class="dv" id="fin-pres-mat-pct">—</span></div>
+              <div class="dr"><span class="dl">Amanda</span><span class="dv pos" id="fin-pres-ama-pct">—</span></div>
+              <div class="dr"><span class="dl">Meta 60/40</span><span class="dv w">Amanda $425.945</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     </div><!-- end fin-view-res -->
 
     <!-- FORMULARIO REGISTRO MES -->
@@ -1643,7 +1675,77 @@ window.finSelecMes = function(key) {
   window.finRender();
 };
 
-// ── RENDER RESUMEN ────────────────────────────────────────
+let finPresMode = 'jul';
+window.finPresView = function(mode) {
+  finPresMode = mode;
+  document.getElementById('pbtn-jul')?.classList.toggle('on', mode==='jul');
+  document.getElementById('pbtn-sep')?.classList.toggle('on', mode==='sep');
+  finRenderPresupuesto(mode);
+};
+
+function finRenderPresupuesto(mode) {
+  const ret = 2500000;
+  const conCredito = mode === 'jul';
+  const rows = [
+    {l:'Arriendo + GC',       v:1000000,  bold:true},
+    {l:'Crédito consumo',     v:conCredito?403052:0, italic:true, hide:!conCredito},
+    {l:'Alimentación',        v:280000},
+    {l:'Cannabis',            v:230000},
+    {l:'TC delivery',         v:100000},
+    {l:'TC otros/deportes',   v:100000},
+    {l:'TC cuotas',           v:80000},
+    {l:'Servicios',           v:64862},
+    {l:'TC transporte',       v:50000},
+    {l:'Mamá',                v:43000},
+    {l:'TC suscripciones',    v:28000},
+    {l:'Oso',                 v:20000},
+    {l:'Aporte Amanda',       v:-250000, pos:true, bold:true},
+  ].filter(r=>!r.hide);
+
+  const neto = rows.reduce((s,r)=>s+r.v, 0);
+  const exc = ret - neto;
+
+  const fila = (l,v,opts={}) => {
+    const {bold,italic,pos} = opts;
+    const style = bold?'font-weight:600':'';
+    const vStyle = pos?'color:var(--green)':v<0?'color:var(--green)':'';
+    return `<tr style="border-bottom:.5px solid var(--border)">
+      <td style="padding:5px 4px;color:var(--text2);${style}${italic?';font-style:italic':''}">${l}</td>
+      <td style="padding:5px 4px;text-align:right;font-family:var(--mono);font-size:11px;${vStyle}">${CLP(Math.abs(v))}${v<0?' ↓':''}</td>
+      <td style="padding:5px 4px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--text3)">${(Math.abs(v)/ret*100).toFixed(1)}%</td>
+    </tr>`;
+  };
+
+  const tabla = finEl('fin-pres-tabla');
+  if(tabla) tabla.innerHTML = `
+    <thead><tr style="border-bottom:1px solid var(--border2)">
+      <th style="padding:5px 4px;text-align:left;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)">Categoría</th>
+      <th style="padding:5px 4px;text-align:right;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)">Monto</th>
+      <th style="padding:5px 4px;text-align:right;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)">% retiro</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r=>fila(r.l, r.v, r)).join('')}
+      <tr style="border-top:1px solid var(--border2)">
+        <td style="padding:6px 4px;font-weight:700">NETO</td>
+        <td style="padding:6px 4px;text-align:right;font-family:var(--mono);font-weight:700">${CLP(neto)}</td>
+        <td style="padding:6px 4px;text-align:right;font-family:var(--mono);color:var(--text3)">${(neto/ret*100).toFixed(1)}%</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 4px;font-weight:700;color:var(--green)">EXCEDENTE</td>
+        <td style="padding:6px 4px;text-align:right;font-family:var(--mono);font-weight:700;color:var(--green)">${CLP(exc)}</td>
+        <td style="padding:6px 4px;text-align:right;font-family:var(--mono);color:var(--green)">${(exc/ret*100).toFixed(1)}%</td>
+      </tr>
+    </tbody>`;
+
+  if(finEl('fin-pres-exc')) finEl('fin-pres-exc').textContent = CLP(exc);
+  if(finEl('fin-pres-exc-sub')) finEl('fin-pres-exc-sub').textContent = `${(exc/ret*100).toFixed(1)}% del retiro de $2.500.000`;
+  if(finEl('fin-pres-exc-bar')) finEl('fin-pres-exc-bar').style.width = Math.min(100,exc/ret*100)+'%';
+
+  const hogar = 1000000 + 64862;
+  if(finEl('fin-pres-mat-pct')) finEl('fin-pres-mat-pct').textContent = `$${(hogar-250000).toLocaleString('es-CL')} (${((hogar-250000)/hogar*100).toFixed(0)}%)`;
+  if(finEl('fin-pres-ama-pct')) finEl('fin-pres-ama-pct').textContent = `$250.000 (${(250000/hogar*100).toFixed(0)}%)`;
+}
+
 window.finRender=function(){
   const keys=finKeys();
   if(!keys.length) return;
@@ -1754,6 +1856,7 @@ window.finRender=function(){
   try{finChDist&&finChDist.destroy();}catch(e){}
   const cxD=finEl('finChartDist');
   if(cxD) finChDist=new Chart(cxD,{type:'doughnut',data:{labels:dl,datasets:[{data:dd,backgroundColor:dc,borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#8a8a96',font:{size:10},boxWidth:10,padding:8}},tooltip:{backgroundColor:'#111',callbacks:{label:c=>` ${c.label}: ${CLP(c.raw)}`}}}}});
+  finRenderPresupuesto(finPresMode||'jul');
 };
 </script>
 </body>
