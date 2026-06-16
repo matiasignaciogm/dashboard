@@ -1374,6 +1374,14 @@ function finShowGate() {
   finEl('fin-content').style.display = 'none';
 }
 
+
+async function finLoad(){
+  if(!db) return;
+  try{
+    const snap = await getDocs(collection(db, FIN_COL));
+    snap.forEach(d=>{ FIN[d.id]=d.data(); });
+  }catch(e){ console.warn("finLoad",e); }
+}
 window.finInit = async function() {
   if (finIsAuthed()) {
     await finLoad();
