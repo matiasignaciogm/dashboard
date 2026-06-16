@@ -360,20 +360,17 @@ input[type=date]{color-scheme:dark}
 <!-- ══════════════════════════════════════════════════════ -->
 <div id="tfin" class="view">
 
-  <!-- AUTH GATE (visible cuando no autenticado) -->
+  <!-- AUTH GATE PIN -->
   <div id="fin-gate" class="fin-gate">
     <div class="fin-lock">🔒</div>
     <div class="fin-gate-title">Finanzas Personales</div>
-    <div class="fin-gate-sub">Esta sección es privada.<br>Inicia sesión con tu cuenta Google para continuar.</div>
-    <button class="fin-goog" id="fin-login-btn" onclick="finLoginGoogle()">
-      <svg width="18" height="18" viewBox="0 0 48 48">
-        <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 2.9L37 9.8C33.6 6.8 29 5 24 5 12.9 5 4 13.9 4 25s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.1-5z"/>
-        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 13 24 13c3.1 0 5.8 1.1 7.9 2.9L37 9.8C33.6 6.8 29 5 24 5c-7.7 0-14.4 4.1-17.7 9.7z"/>
-        <path fill="#4CAF50" d="M24 45c5 0 9.5-1.7 13-4.5l-6-5.2C29.3 37 26.8 38 24 38c-5.3 0-9.7-3.6-11.3-8.5l-6.6 5.1C9.5 40.8 16.3 45 24 45z"/>
-        <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.8l6 5.2C40.5 35.8 44 30.8 44 25c0-1.3-.1-2.7-.4-5z"/>
-      </svg>
-      Continuar con Google
-    </button>
+    <div class="fin-gate-sub">Sección privada · ingresa tu PIN para continuar</div>
+    <div style="display:flex;gap:8px;margin-top:.5rem">
+      <input type="password" id="fin-pin-input" maxlength="8" placeholder="PIN" autocomplete="off"
+        style="width:140px;text-align:center;font-size:1.2rem;letter-spacing:.3em;border-radius:10px;padding:12px"
+        onkeydown="if(event.key==='Enter') finLoginPin()">
+      <button class="fin-goog" onclick="finLoginPin()" style="width:auto;padding:12px 20px">Entrar →</button>
+    </div>
     <div class="fin-err" id="fin-err"></div>
   </div>
 
@@ -382,8 +379,8 @@ input[type=date]{color-scheme:dark}
     <!-- User chip -->
     <div class="fin-ubar">
       <div class="fin-chip" onclick="finLogout()" title="Cerrar sesión">
-        <div class="fin-av" id="fin-av">MG</div>
-        <span id="fin-nombre">Matías</span>
+        <div class="fin-av">MG</div>
+        <span>Matías</span>
         <span style="color:var(--text3);margin-left:3px">· salir</span>
       </div>
     </div>
@@ -1244,7 +1241,6 @@ render26();
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyACRmopx1jOxZyvKtjljeiUQLtkKDg6qTA",
@@ -1329,9 +1325,17 @@ window.fbPush = async function(){
 initSync();
 
 // ══════════════════════════════════════════════════════════
-// FINANZAS PERSONALES — Auth + Data + Render
+// FINANZAS PERSONALES — PIN Auth + Data + Render
 // ══════════════════════════════════════════════════════════
 const FIN_COL = 'finanzas_personales';
+
+// ─── PIN: cambia este valor por tu PIN real ───────────────
+// Para generar el hash de tu PIN: abre la consola del browser y escribe:
+//   crypto.subtle.digest('SHA-256', new TextEncoder().encode('TU_PIN')).then(b=>console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
+// Pega el resultado aquí:
+const FIN_PIN_HASH = '8ecb5bcd8cd84cc3ffc6f5dc3076d81c0a457a6bd4b305a33f318b623d701c2e'; // ← reemplaza con tu hash
+// ─────────────────────────────────────────────────────────
+
 const FIN_H = {
   '2026-01':{ retiro:2000000, arriendo:680000, credito_consumo:0, cannabis:143000, mama:60000, tc_delivery:224000, tc_transporte:21000, tc_suscripciones:18000, tc_almacen:0, tc_deportes:12000, tc_cuotas:315000, tc_otros:137000, ahorro_saldo:2000000, tc_deuda:600000, notas:'Ene sin cuota crédito consumo.' },
   '2026-02':{ retiro:2170500, arriendo:686556, credito_consumo:0, cannabis:135000, mama:0, tc_delivery:199000, tc_transporte:6000, tc_suscripciones:27000, tc_almacen:21000, tc_deportes:6000, tc_cuotas:249000, tc_otros:159000, ahorro_saldo:2256350, tc_deuda:680000, notas:'Incluye Airbnb $68.912.' },
@@ -1353,41 +1357,71 @@ const finCmp = m=>{
 };
 const finEl = id=>document.getElementById(id);
 
-// Auth
-const finAuth = getAuth(window._fbApp);
-
-// Capturar resultado de redirect si viene de Google
-getRedirectResult(finAuth).catch(e => console.warn('redirectResult', e));
-
-onAuthStateChanged(finAuth, async user=>{
-  if(user){
-    finEl('fin-gate').style.display='none';
-    finEl('fin-content').style.display='block';
-    const nm=(user.displayName||'MG').split(' ')[0];
-    finEl('fin-av').textContent=nm.charAt(0).toUpperCase();
-    finEl('fin-nombre').textContent=nm;
-    await finLoad();
-    window.finRender();
-  } else {
-    finEl('fin-gate').style.display='flex';
-    finEl('fin-content').style.display='none';
-  }
-});
-
-async function finLoad(){
-  if(!db) return;
-  try{
-    const snap = await getDocs(collection(db, FIN_COL));
-    snap.forEach(d=>{ FIN[d.id]=d.data(); });
-  }catch(e){ console.warn('finLoad',e); }
+// ─── PIN AUTH ────────────────────────────────────────────
+async function finHashPin(pin) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
+  return [...new Uint8Array(buf)].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 
-window.finInit = async function(){
-  // Triggered lazily on first tab open — auth listener handles the rest
-  // If already authed (page reload while tab was last open), onAuthStateChanged fires automatically
+function finIsAuthed() {
+  return sessionStorage.getItem('fin_ok') === '1';
+}
+
+function finShowContent() {
+  finEl('fin-gate').style.display = 'none';
+  finEl('fin-content').style.display = 'block';
+}
+
+function finShowGate() {
+  finEl('fin-gate').style.display = 'flex';
+  finEl('fin-content').style.display = 'none';
+}
+
+window.finInit = async function() {
+  if (finIsAuthed()) {
+    await finLoad();
+    finShowContent();
+    window.finRender();
+  }
 };
 
-window.finRender = function(){
+window.finLoginPin = async function() {
+  const input = finEl('fin-pin-input');
+  const err = finEl('fin-err');
+  const pin = input.value.trim();
+  if (!pin) return;
+
+  // Modo sin PIN configurado: acceso directo (solo para setup inicial)
+  if (FIN_PIN_HASH === '8ecb5bcd8cd84cc3ffc6f5dc3076d81c0a457a6bd4b305a33f318b623d701c2e') {
+    sessionStorage.setItem('fin_ok', '1');
+    await finLoad();
+    finShowContent();
+    window.finRender();
+    err.textContent = '⚠ Configura tu PIN en el código (FIN_PIN_HASH)';
+    err.style.color = 'var(--amber)';
+    return;
+  }
+
+  const hash = await finHashPin(pin);
+  if (hash === FIN_PIN_HASH) {
+    sessionStorage.setItem('fin_ok', '1');
+    input.value = '';
+    err.textContent = '';
+    await finLoad();
+    finShowContent();
+    window.finRender();
+  } else {
+    err.textContent = 'PIN incorrecto';
+    input.value = '';
+    input.focus();
+  }
+};
+
+window.finLogout = function() {
+  if (!confirm('¿Cerrar sesión de Finanzas?')) return;
+  sessionStorage.removeItem('fin_ok');
+  finShowGate();
+};
   const keys=finKeys();
   if(!keys.length) return;
   const lastKey=keys[keys.length-1];
@@ -1445,20 +1479,6 @@ window.finRender = function(){
   if(cxD) finChDist=new Chart(cxD,{type:'doughnut',data:{labels:dl,datasets:[{data:dd,backgroundColor:dc,borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#8a8a96',font:{size:10},boxWidth:10,padding:8}},tooltip:{backgroundColor:'#111',callbacks:{label:c=>` ${c.label}: ${CLP(c.raw)}`}}}}});
 };
 
-window.finLoginGoogle = async function(){
-  const btn=finEl('fin-login-btn'), err=finEl('fin-err');
-  btn.disabled=true; btn.textContent='Redirigiendo…'; err.textContent='';
-  try{
-    await signInWithRedirect(finAuth, new GoogleAuthProvider());
-  }catch(e){
-    err.textContent=e.message;
-    btn.disabled=false; btn.innerHTML='<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 2.9L37 9.8C33.6 6.8 29 5 24 5 12.9 5 4 13.9 4 25s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.1-5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 13 24 13c3.1 0 5.8 1.1 7.9 2.9L37 9.8C33.6 6.8 29 5 24 5c-7.7 0-14.4 4.1-17.7 9.7z"/><path fill="#4CAF50" d="M24 45c5 0 9.5-1.7 13-4.5l-6-5.2C29.3 37 26.8 38 24 38c-5.3 0-9.7-3.6-11.3-8.5l-6.6 5.1C9.5 40.8 16.3 45 24 45z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.8l6 5.2C40.5 35.8 44 30.8 44 25c0-1.3-.1-2.7-.4-5z"/></svg> Continuar con Google';
-  }
-};
-
-window.finLogout = async function(){
-  if(!confirm('¿Cerrar sesión de Finanzas Personales?')) return;
-  await signOut(finAuth);
 };
 </script>
 </body>
