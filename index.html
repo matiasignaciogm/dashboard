@@ -1329,11 +1329,8 @@ initSync();
 // ══════════════════════════════════════════════════════════
 const FIN_COL = 'finanzas_personales';
 
-// ─── PIN: cambia este valor por tu PIN real ───────────────
-// Para generar el hash de tu PIN: abre la consola del browser y escribe:
-//   crypto.subtle.digest('SHA-256', new TextEncoder().encode('TU_PIN')).then(b=>console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
-// Pega el resultado aquí:
-const FIN_PIN_HASH = '8ecb5bcd8cd84cc3ffc6f5dc3076d81c0a457a6bd4b305a33f318b623d701c2e'; // ← reemplaza con tu hash
+// ─── PIN: hash SHA-256 del PIN ────────────────────────────
+const FIN_PIN_HASH = '8ecb5bcd8cd84cc3ffc6f5dc3076d81c0a457a6bd4b305a33f318b623d701c2e';
 // ─────────────────────────────────────────────────────────
 
 const FIN_H = {
@@ -1391,8 +1388,8 @@ window.finLoginPin = async function() {
   const pin = input.value.trim();
   if (!pin) return;
 
-  // Modo sin PIN configurado: acceso directo (solo para setup inicial)
-  if (FIN_PIN_HASH === '8ecb5bcd8cd84cc3ffc6f5dc3076d81c0a457a6bd4b305a33f318b623d701c2e') {
+  // PIN no configurado — no debería llegar acá con hash real
+  if (!FIN_PIN_HASH || FIN_PIN_HASH.length !== 64) {
     sessionStorage.setItem('fin_ok', '1');
     await finLoad();
     finShowContent();
