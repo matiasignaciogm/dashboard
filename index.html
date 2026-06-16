@@ -527,7 +527,7 @@ input[type=date]{color-scheme:dark}
           </div>
           <div class="tnote">
             <p class="tnote-t">Presupuesto objetivo (jul 2026+)</p>
-            <p class="tnote-d">Arriendo+GC $1M · Servicios $65k · Feria+super $280k · Cannabis $230k · Oso $20k · TC ~$308k · Amanda −$250k → <strong>Neto ~$1.696.000 · Excedente ~$804.000</strong></p>
+            <p class="tnote-d">Arriendo $800k+GC $200k · Servicios $65k · Feria+super $280k · Cannabis $230k · Oso $20k · TC ~$308k · Amanda −$250k → <strong>Neto ~$1.703.000 · Excedente ~$797.000</strong></p>
           </div>
         </div>
       </div>
@@ -1435,11 +1435,11 @@ const FIN_PIN_HASH = '8ecb5bcd8cd84cc3ffc6f5dc3076d81c0a457a6bd4b305a33f318b623d
 // ─────────────────────────────────────────────────────────
 
 const FIN_H = {
-  '2026-01':{ retiro:2000000, arriendo:680000, credito_consumo:0, cannabis:143000, mama:60000, tc_delivery:224000, tc_transporte:21000, tc_suscripciones:18000, tc_almacen:0, tc_deportes:12000, tc_cuotas:315000, tc_otros:137000, ahorro_saldo:2000000, tc_deuda:600000, notas:'Ene sin cuota crédito consumo.' },
-  '2026-02':{ retiro:2170500, arriendo:686556, credito_consumo:0, cannabis:135000, mama:0, tc_delivery:199000, tc_transporte:6000, tc_suscripciones:27000, tc_almacen:21000, tc_deportes:6000, tc_cuotas:249000, tc_otros:159000, ahorro_saldo:2256350, tc_deuda:680000, notas:'Incluye Airbnb $68.912.' },
-  '2026-03':{ retiro:1856866, arriendo:701496, credito_consumo:403052, cannabis:290000, mama:0, tc_delivery:213000, tc_transporte:111000, tc_suscripciones:17000, tc_almacen:39000, tc_deportes:111000, tc_cuotas:243000, tc_otros:70000, ahorro_saldo:2317000, tc_deuda:640000, notas:'Cuota 8 crédito consumo (mar 9). Mucho Uber Trip.' },
-  '2026-04':{ retiro:3793000, arriendo:701496, credito_consumo:403052, cannabis:215000, mama:125000, tc_delivery:70000, tc_transporte:96000, tc_suscripciones:48000, tc_almacen:37000, tc_deportes:26000, tc_cuotas:243000, tc_otros:34000, ahorro_saldo:3000000, tc_deuda:650000, notas:'Cuota 9 (abr 28). Deuda TC $484k convertida 3 cuotas 1.95%.' },
-  '2026-05':{ retiro:3158000, arriendo:701850, credito_consumo:0, cannabis:365000, mama:30000, tc_delivery:30000, tc_transporte:18000, tc_suscripciones:36000, tc_almacen:0, tc_deportes:17000, tc_cuotas:168000, tc_otros:60000, ahorro_saldo:4225000, tc_deuda:560000, notas:'TC deuda $560k — plan liquidar jul-ago con excedente.' },
+  '2026-01':{ retiro:2000000, arriendo:680000, gc:152767, credito_consumo:0, servicios:64862, cannabis:143000, mama:60000, alim:280000, oso:20000, amanda:354958, tc_delivery:224000, tc_transporte:21000, tc_suscripciones:18000, tc_almacen:0, tc_deportes:12000, tc_cuotas:315000, tc_otros:137000, ahorro_saldo:2000000, tc_deuda:600000, notas:'Amanda aportaba fuerte ($354.958 neto). Sin cuota credito consumo (entre cuota 7 dic y cuota 8 mar).' },
+  '2026-02':{ retiro:2170500, arriendo:686556, gc:152767, credito_consumo:0, servicios:64862, cannabis:135000, mama:0, alim:280000, oso:20000, amanda:217844, tc_delivery:199000, tc_transporte:6000, tc_suscripciones:27000, tc_almacen:21000, tc_deportes:6000, tc_cuotas:249000, tc_otros:159000, ahorro_saldo:2256350, tc_deuda:680000, notas:'Amanda aporte neto $217.844. Incluye Airbnb $68.912.' },
+  '2026-03':{ retiro:1856866, arriendo:701496, gc:152767, credito_consumo:403052, servicios:64862, cannabis:290000, mama:0, alim:280000, oso:20000, amanda:142217, tc_delivery:213000, tc_transporte:111000, tc_suscripciones:17000, tc_almacen:39000, tc_deportes:111000, tc_cuotas:243000, tc_otros:70000, ahorro_saldo:2317000, tc_deuda:640000, notas:'Amanda aporte neto $142.217 (inicio cesantia). Cuota 8 (mar 9). Devolvio $220k a MGPOST.' },
+  '2026-04':{ retiro:3793000, arriendo:701496, gc:152767, credito_consumo:403052, servicios:64862, cannabis:215000, mama:125000, alim:280000, oso:20000, amanda:0, tc_delivery:70000, tc_transporte:96000, tc_suscripciones:48000, tc_almacen:37000, tc_deportes:26000, tc_cuotas:243000, tc_otros:34000, ahorro_saldo:3000000, tc_deuda:650000, notas:'Amanda aporte neto -$81.287 (Matias cubre mas). Cuota 9 (abr 28). TC $484k a 3 cuotas 1.95%.' },
+  '2026-05':{ retiro:3158000, arriendo:701850, gc:152767, credito_consumo:0, servicios:64862, cannabis:365000, mama:30000, alim:280000, oso:20000, amanda:250000, tc_delivery:30000, tc_transporte:18000, tc_suscripciones:36000, tc_almacen:0, tc_deportes:17000, tc_cuotas:168000, tc_otros:60000, ahorro_saldo:4225000, tc_deuda:560000, notas:'Amanda transfirió $250.000 el 31/05 23:13. TC $560k plan liquidar jul-ago. Sin cuota credito (cuota 10 Jun 3).' },
 };
 let FIN = { ...FIN_H };
 let finChExc=null, finChDist=null, finChGastos=null;
@@ -1717,13 +1717,14 @@ window.finRender=function(){
 
   // Gráfico stacked: evolución de gastos por categoría
   const gastoCats=[
-    {k:'arriendo',  l:'Arriendo+GC', fn:m=>(m.arriendo||0)+(m.gc||0), c:'#4da6ff'},
-    {k:'alim',      l:'Alimentación', fn:m=>(m.alim||0)+(m.tc_almacen||0), c:'#3dffa0'},
-    {k:'tc_delivery',l:'Delivery',   fn:m=>m.tc_delivery||0, c:'#ff4d6d'},
-    {k:'cannabis',  l:'Cannabis',    fn:m=>m.cannabis||0, c:'#c084fc'},
-    {k:'tc_cuotas', l:'Cuotas TC',   fn:m=>m.tc_cuotas||0, c:'#3D3D3D'},
-    {k:'servicios', l:'Servicios',   fn:m=>(m.servicios||0)+(m.credito_consumo||0), c:'#ffb347'},
-    {k:'tc_otros',  l:'Otros',       fn:m=>(m.tc_transporte||0)+(m.tc_suscripciones||0)+(m.tc_deportes||0)+(m.tc_otros||0)+(m.mama||0)+(m.oso||0), c:'#55555f'},
+    {l:'Arriendo+GC',  fn:m=>(m.arriendo||0)+(m.gc||0), c:'#4da6ff'},
+    {l:'Alimentación', fn:m=>(m.alim||0)+(m.tc_almacen||0), c:'#3dffa0'},
+    {l:'Delivery',     fn:m=>m.tc_delivery||0, c:'#ff4d6d'},
+    {l:'Cannabis',     fn:m=>m.cannabis||0, c:'#c084fc'},
+    {l:'Crédito',      fn:m=>m.credito_consumo||0, c:'#ff8c42'},
+    {l:'Cuotas TC',    fn:m=>m.tc_cuotas||0, c:'#3D3D3D'},
+    {l:'Servicios',    fn:m=>(m.servicios||0), c:'#ffb347'},
+    {l:'Otros',        fn:m=>(m.tc_transporte||0)+(m.tc_suscripciones||0)+(m.tc_deportes||0)+(m.tc_otros||0)+(m.mama||0)+(m.oso||0), c:'#55555f'},
   ];
   try{finChGastos&&finChGastos.destroy();}catch(e){}
   const cxG=finEl('finChartGastos');
@@ -1747,9 +1748,9 @@ window.finRender=function(){
   if(cxE) finChExc=new Chart(cxE,{type:'bar',data:{labels:keys.map(finLbl),datasets:[{label:'Excedente',data:excs,backgroundColor:excs.map(v=>v>=0?'rgba(61,255,160,.75)':'rgba(255,77,109,.75)'),borderRadius:4}]},options:chOpts});
 
   const m=FIN[lastKey]||{};
-  const dd=[m.arriendo||0,m.credito_consumo||0,m.cannabis||0,m.mama||0,(m.tc_delivery||0)+(m.tc_transporte||0),m.tc_suscripciones||0,m.tc_cuotas||0,(m.tc_almacen||0)+(m.tc_deportes||0)+(m.tc_otros||0)];
-  const dl=['Arriendo','Crédito','Cannabis','Mamá','Delivery/UberTrip','Suscripciones','Cuotas TC','Resto TC'];
-  const dc=['#4da6ff','#ff4d6d','#c084fc','#ffb347','#ff4d6d','#8a8a96','#3D3D3D','#55555f'];
+  const dd=[m.arriendo||0,(m.gc||0),(m.credito_consumo||0),(m.servicios||0),(m.alim||0)+(m.tc_almacen||0),(m.cannabis||0),(m.tc_delivery||0),(m.tc_cuotas||0),(m.tc_transporte||0)+(m.tc_suscripciones||0)+(m.tc_deportes||0)+(m.tc_otros||0)+(m.mama||0)+(m.oso||0)];
+  const dl=['Arriendo','GC edificio','Crédito consumo','Servicios','Alimentación','Cannabis','Delivery','Cuotas TC','Otros'];
+  const dc=['#4da6ff','#2d7acc','#ff8c42','#ffb347','#3dffa0','#c084fc','#ff4d6d','#3D3D3D','#55555f'];
   try{finChDist&&finChDist.destroy();}catch(e){}
   const cxD=finEl('finChartDist');
   if(cxD) finChDist=new Chart(cxD,{type:'doughnut',data:{labels:dl,datasets:[{data:dd,backgroundColor:dc,borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#8a8a96',font:{size:10},boxWidth:10,padding:8}},tooltip:{backgroundColor:'#111',callbacks:{label:c=>` ${c.label}: ${CLP(c.raw)}`}}}}});
