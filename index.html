@@ -114,7 +114,34 @@ input[type=number]::placeholder{color:var(--text3)}
 .el{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:3px}
 .ev{font-family:var(--mono);font-size:1rem;font-weight:500;margin-bottom:3px}
 .ed{font-size:11px;color:var(--text3);line-height:1.3}
-/* CHART — fixed height containers */
+/* ── FINANZAS PERSONALES ── */
+.fin-gate{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3.5rem 1rem;gap:.75rem;text-align:center}
+.fin-lock{font-size:2.5rem;margin-bottom:.25rem}
+.fin-gate-title{font-size:1.1rem;font-weight:700;color:var(--page-text)}
+.fin-gate-sub{font-size:12px;color:var(--text3);font-family:var(--mono);max-width:280px;line-height:1.6}
+.fin-goog{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:12px 20px;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:600;color:var(--text);transition:all .2s;margin-top:.5rem}
+.fin-goog:hover{border-color:var(--accent);background:var(--bg3)}
+.fin-goog:disabled{opacity:.5;pointer-events:none}
+.fin-err{font-size:11px;font-family:var(--mono);color:var(--red);min-height:14px}
+.fin-ubar{display:flex;justify-content:flex-end;margin-bottom:1rem}
+.fin-chip{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:4px 10px 4px 6px;cursor:pointer;font-size:11px;font-family:var(--mono);color:var(--text2);transition:all .15s}
+.fin-chip:hover{border-color:var(--red);color:var(--red)}
+.fin-av{width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#111;flex-shrink:0}
+.fin-mcards{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-bottom:1.25rem}
+.fin-mc{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:10px;position:relative;overflow:hidden}
+.fin-mc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--border2)}
+.fin-mc.fp::before{background:var(--green)}.fin-mc.fn::before{background:var(--red)}
+.fin-mn{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:5px}
+.fin-mv{font-family:var(--mono);font-size:.85rem;font-weight:500;margin-bottom:3px}
+.fin-mr{display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);color:var(--text3);padding:1px 0}
+.fin-mr .fv{color:var(--text2)}.fin-mr .fv.fp{color:var(--green)}.fin-mr .fv.fn{color:var(--red)}
+.fin-meta{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:1rem;margin-bottom:.75rem}
+.fin-ml{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:.5rem}
+.fin-mval{font-family:var(--mono);font-size:1.2rem;font-weight:500;margin-bottom:3px}
+.fin-msub{font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:.75rem}
+.fin-bbg{height:7px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.fin-bfg{height:100%;border-radius:4px;background:var(--green);transition:width .6s}
+@media(max-width:700px){.fin-mcards{grid-template-columns:repeat(3,1fr)}}
 .chart-box{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:1.25rem;margin-bottom:1.25rem}
 .chart-box h3{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:1rem}
 .chart-h240{position:relative;height:240px;width:100%}
@@ -189,6 +216,7 @@ input[type=date]{color-scheme:dark}
   <button class="tab" onclick="setTab('tcmp')">2025 vs 2026</button>
   <button class="tab" onclick="setTab('t25')">2025 completo</button>
   <button class="tab" onclick="setTab('tcli')">Clientes</button>
+  <button class="tab" onclick="setTab('tfin')">Finanzas 🔒</button>
 </div>
 
 <!-- VIEW 2026 -->
@@ -327,7 +355,89 @@ input[type=date]{color-scheme:dark}
   <div class="footer"><span>Registro manual de facturas · Sincronizado en la nube</span><span>MG POST SPA</span></div>
 </div>
 
-<script>
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- VIEW FINANZAS PERSONALES — acceso restringido         -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="tfin" class="view">
+
+  <!-- AUTH GATE (visible cuando no autenticado) -->
+  <div id="fin-gate" class="fin-gate">
+    <div class="fin-lock">🔒</div>
+    <div class="fin-gate-title">Finanzas Personales</div>
+    <div class="fin-gate-sub">Esta sección es privada.<br>Inicia sesión con tu cuenta Google para continuar.</div>
+    <button class="fin-goog" id="fin-login-btn" onclick="finLoginGoogle()">
+      <svg width="18" height="18" viewBox="0 0 48 48">
+        <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 2.9L37 9.8C33.6 6.8 29 5 24 5 12.9 5 4 13.9 4 25s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.1-5z"/>
+        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 13 24 13c3.1 0 5.8 1.1 7.9 2.9L37 9.8C33.6 6.8 29 5 24 5c-7.7 0-14.4 4.1-17.7 9.7z"/>
+        <path fill="#4CAF50" d="M24 45c5 0 9.5-1.7 13-4.5l-6-5.2C29.3 37 26.8 38 24 38c-5.3 0-9.7-3.6-11.3-8.5l-6.6 5.1C9.5 40.8 16.3 45 24 45z"/>
+        <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.8l6 5.2C40.5 35.8 44 30.8 44 25c0-1.3-.1-2.7-.4-5z"/>
+      </svg>
+      Continuar con Google
+    </button>
+    <div class="fin-err" id="fin-err"></div>
+  </div>
+
+  <!-- CONTENT (visible solo cuando autenticado) -->
+  <div id="fin-content" style="display:none">
+    <!-- User chip -->
+    <div class="fin-ubar">
+      <div class="fin-chip" onclick="finLogout()" title="Cerrar sesión">
+        <div class="fin-av" id="fin-av">MG</div>
+        <span id="fin-nombre">Matías</span>
+        <span style="color:var(--text3);margin-left:3px">· salir</span>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpis" id="fin-kpis"></div>
+
+    <!-- Month cards -->
+    <p class="slabel" style="margin-bottom:.5rem">Evolución mensual</p>
+    <div class="fin-mcards" id="fin-cards"></div>
+
+    <!-- Charts + sidebar -->
+    <div class="main-grid">
+      <div>
+        <div class="chart-box">
+          <h3>Excedente mensual</h3>
+          <div class="chart-h240"><canvas id="finChartExc"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <h3>Distribución de gastos — último mes</h3>
+          <div class="chart-h240"><canvas id="finChartDist"></canvas></div>
+        </div>
+      </div>
+      <div>
+        <div class="fin-meta">
+          <div class="fin-ml">Saldo cuenta ahorro</div>
+          <div class="fin-mval" id="fin-ahorro-val" style="color:var(--accent)">—</div>
+          <div class="fin-msub" id="fin-ahorro-sub">Cta. Ahorro Santander</div>
+        </div>
+        <div class="fin-meta">
+          <div class="fin-ml">Fondo de emergencia</div>
+          <div class="fin-mval" id="fin-emerg-val">—</div>
+          <div class="fin-msub">Meta $6.000.000 · 3 meses de gastos</div>
+          <div class="fin-bbg"><div class="fin-bfg" id="fin-emerg-bar" style="width:0%"></div></div>
+        </div>
+        <div class="fin-meta">
+          <div class="fin-ml">Deuda TC Visa Life</div>
+          <div class="fin-mval" id="fin-tc-val" style="color:var(--red)">—</div>
+          <div class="fin-msub">Plan: liquidar jul–ago 2026</div>
+          <div class="fin-bbg"><div class="fin-bfg" id="fin-tc-bar" style="width:0%;background:var(--amber)"></div></div>
+        </div>
+        <div class="card">
+          <p class="ct">Últimas notas</p>
+          <p id="fin-nota" style="font-size:11px;color:var(--text2);line-height:1.5">—</p>
+        </div>
+        <div class="tnote">
+          <p class="tnote-t">Retiro objetivo</p>
+          <p class="tnote-d">$2.500.000/mes fijo desde jun 2026. Sin provisión de impuestos (F22 AT2025 y AT2026: $0 a pagar). Crédito consumo termina ago 2026.</p>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span>Finanzas personales · datos privados</span><span>Firebase · finanzas_personales</span></div>
+  </div>
+</div>
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const $ = id => document.getElementById(id);
@@ -410,13 +520,14 @@ function ritmoBadge(venta){
 /* ── TAB ── */
 function setTab(t){
   ST.tab=t;
-  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('on',['t26','tcmp','t25','tcli'][i]===t));
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('on',['t26','tcmp','t25','tcli','tfin'][i]===t));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   $(t).classList.add('on');
   if(t==='t26') render26();
   else if(t==='tcmp') renderCmp();
   else if(t==='t25') render25();
-  else renderCli();
+  else if(t==='tcli') renderCli();
+  else if(t==='tfin'){ if(!window._finInited){window._finInited=true; window.finInit&&window.finInit();} else { window.finRender&&window.finRender(); } }
 }
 
 /* ── RENDER 2026 ── */
@@ -1131,7 +1242,8 @@ render26();
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyACRmopx1jOxZyvKtjljeiUQLtkKDg6qTA",
@@ -1178,6 +1290,7 @@ async function initSync(){
   setSyncUI('connecting');
   try{
     const app = initializeApp(firebaseConfig);
+    window._fbApp = app;
     db = getFirestore(app);
     dashRef = doc(db,'mgpost','dashboard');
 
@@ -1213,6 +1326,136 @@ window.fbPush = async function(){
 };
 
 initSync();
+
+// ══════════════════════════════════════════════════════════
+// FINANZAS PERSONALES — Auth + Data + Render
+// ══════════════════════════════════════════════════════════
+const FIN_COL = 'finanzas_personales';
+const FIN_H = {
+  '2026-01':{ retiro:2000000, arriendo:680000, credito_consumo:0, cannabis:143000, mama:60000, tc_delivery:224000, tc_transporte:21000, tc_suscripciones:18000, tc_almacen:0, tc_deportes:12000, tc_cuotas:315000, tc_otros:137000, ahorro_saldo:2000000, tc_deuda:600000, notas:'Ene sin cuota crédito consumo.' },
+  '2026-02':{ retiro:2170500, arriendo:686556, credito_consumo:0, cannabis:135000, mama:0, tc_delivery:199000, tc_transporte:6000, tc_suscripciones:27000, tc_almacen:21000, tc_deportes:6000, tc_cuotas:249000, tc_otros:159000, ahorro_saldo:2256350, tc_deuda:680000, notas:'Incluye Airbnb $68.912.' },
+  '2026-03':{ retiro:1856866, arriendo:701496, credito_consumo:403052, cannabis:290000, mama:0, tc_delivery:213000, tc_transporte:111000, tc_suscripciones:17000, tc_almacen:39000, tc_deportes:111000, tc_cuotas:243000, tc_otros:70000, ahorro_saldo:2317000, tc_deuda:640000, notas:'Cuota 8 crédito consumo (mar 9). Mucho Uber Trip.' },
+  '2026-04':{ retiro:3793000, arriendo:701496, credito_consumo:403052, cannabis:215000, mama:125000, tc_delivery:70000, tc_transporte:96000, tc_suscripciones:48000, tc_almacen:37000, tc_deportes:26000, tc_cuotas:243000, tc_otros:34000, ahorro_saldo:3000000, tc_deuda:650000, notas:'Cuota 9 (abr 28). Deuda TC $484k convertida 3 cuotas 1.95%.' },
+  '2026-05':{ retiro:3158000, arriendo:701850, credito_consumo:0, cannabis:365000, mama:30000, tc_delivery:30000, tc_transporte:18000, tc_suscripciones:36000, tc_almacen:0, tc_deportes:17000, tc_cuotas:168000, tc_otros:60000, ahorro_saldo:4225000, tc_deuda:560000, notas:'TC deuda $560k — plan liquidar jul-ago con excedente.' },
+};
+let FIN = { ...FIN_H };
+let finChExc=null, finChDist=null;
+
+const finML = {'01':'Ene','02':'Feb','03':'Mar','04':'Abr','05':'May','06':'Jun','07':'Jul','08':'Ago','09':'Sep','10':'Oct','11':'Nov','12':'Dic'};
+const finLbl = k=>{ const[y,m]=k.split('-'); return `${finML[m]} ${y}`; };
+const finKeys = ()=>Object.keys(FIN).sort();
+const finCmp = m=>{
+  const gf=(m.arriendo||0)+(m.credito_consumo||0)+(m.mama||0);
+  const gtc=(m.tc_delivery||0)+(m.tc_transporte||0)+(m.tc_suscripciones||0)+(m.tc_almacen||0)+(m.tc_deportes||0)+(m.tc_cuotas||0)+(m.tc_otros||0);
+  const gt=gf+(m.cannabis||0)+gtc;
+  return {gf,gtc,gt,exc:(m.retiro||0)-gt};
+};
+const finEl = id=>document.getElementById(id);
+
+// Auth
+const finAuth = getAuth(window._fbApp);
+
+onAuthStateChanged(finAuth, async user=>{
+  if(user){
+    finEl('fin-gate').style.display='none';
+    finEl('fin-content').style.display='block';
+    const nm=(user.displayName||'MG').split(' ')[0];
+    finEl('fin-av').textContent=nm.charAt(0).toUpperCase();
+    finEl('fin-nombre').textContent=nm;
+    await finLoad();
+    window.finRender();
+  } else {
+    finEl('fin-gate').style.display='flex';
+    finEl('fin-content').style.display='none';
+  }
+});
+
+async function finLoad(){
+  if(!db) return;
+  try{
+    const snap = await getDocs(collection(db, FIN_COL));
+    snap.forEach(d=>{ FIN[d.id]=d.data(); });
+  }catch(e){ console.warn('finLoad',e); }
+}
+
+window.finInit = async function(){
+  // Triggered lazily on first tab open — auth listener handles the rest
+  // If already authed (page reload while tab was last open), onAuthStateChanged fires automatically
+};
+
+window.finRender = function(){
+  const keys=finKeys();
+  if(!keys.length) return;
+  const lastKey=keys[keys.length-1];
+  const lastM=FIN[lastKey]||{};
+  const lastC=finCmp(lastM);
+
+  // KPIs
+  finEl('fin-kpis').innerHTML=`
+    <div class="kpi"><div class="kl">Retiro MGPOST</div><div class="kv ${(lastM.retiro||0)>=2500000?'pos':'w'}">${CLP(lastM.retiro||0)}</div><div class="ks">${(lastM.retiro||0)>=2500000?'✓ objetivo $2.5M':'bajo objetivo'}</div></div>
+    <div class="kpi"><div class="kl">Gasto total</div><div class="kv">${CLP(lastC.gt)}</div><div class="ks">${Math.round(lastC.gt/Math.max(1,lastM.retiro||1)*100)}% del retiro</div></div>
+    <div class="kpi"><div class="kl">Excedente</div><div class="kv ${lastC.exc>=0?'pos':'neg'}">${CLP(lastC.exc)}</div><div class="ks">retiro − gastos</div></div>
+    <div class="kpi"><div class="kl">Saldo ahorro</div><div class="kv" style="color:var(--accent)">${CLP(lastM.ahorro_saldo||0)}</div><div class="ks">Cta. Ahorro Santander</div></div>
+    <div class="kpi"><div class="kl">Deuda TC</div><div class="kv ${(lastM.tc_deuda||0)>600000?'neg':(lastM.tc_deuda||0)>300000?'w':''}">${CLP(lastM.tc_deuda||0)}</div><div class="ks">Visa Life · cupo $1M</div></div>
+  `;
+
+  // Month cards
+  finEl('fin-cards').innerHTML=keys.map(k=>{
+    const m=FIN[k], c=finCmp(m);
+    return `<div class="fin-mc ${c.exc>=0?'fp':'fn'}">
+      <div class="fin-mn">${finLbl(k)}</div>
+      <div class="fin-mv">${CLP(m.retiro||0)}</div>
+      <div class="fin-mr"><span>gasto</span><span class="fv">${CLP(c.gt)}</span></div>
+      <div class="fin-mr"><span>exc.</span><span class="fv ${c.exc>=0?'fp':'fn'}">${CLP(c.exc)}</span></div>
+    </div>`;
+  }).join('');
+
+  // Sidebar metas
+  const ah=lastM.ahorro_saldo||0, deuda=lastM.tc_deuda||0;
+  finEl('fin-ahorro-val').textContent=CLP(ah);
+  finEl('fin-ahorro-sub').textContent=`fondo emergencia · ${Math.min(100,Math.round(ah/6000000*100))}% de $6M`;
+  finEl('fin-emerg-val').textContent=CLP(ah);
+  finEl('fin-emerg-bar').style.width=Math.min(100,Math.round(ah/6000000*100))+'%';
+  finEl('fin-tc-val').textContent=CLP(deuda);
+  finEl('fin-tc-bar').style.width=Math.min(100,Math.round(deuda/1000000*100))+'%';
+  const notaKey=[...keys].reverse().find(k=>FIN[k].notas);
+  if(notaKey) finEl('fin-nota').textContent=`${finLbl(notaKey)}: ${FIN[notaKey].notas}`;
+
+  // Charts
+  const chOpts={
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#8a8a96',font:{family:"'DM Mono',monospace",size:11}}},tooltip:{backgroundColor:'#111',borderColor:'#2E2E2E',borderWidth:1,callbacks:{label:c=>' '+CLP(c.raw)}}},
+    scales:{x:{grid:{color:'#1C1C1C'},ticks:{color:'#55555f',font:{size:10}}},y:{grid:{color:'#1C1C1C'},ticks:{color:'#55555f',font:{size:10},callback:v=>'$'+(v/1000000).toFixed(1)+'M'}}}
+  };
+  const excs=keys.map(k=>finCmp(FIN[k]).exc);
+  try{finChExc&&finChExc.destroy();}catch(e){}
+  const cxE=finEl('finChartExc');
+  if(cxE) finChExc=new Chart(cxE,{type:'bar',data:{labels:keys.map(finLbl),datasets:[{label:'Excedente',data:excs,backgroundColor:excs.map(v=>v>=0?'rgba(61,255,160,.75)':'rgba(255,77,109,.75)'),borderRadius:4}]},options:chOpts});
+
+  const m=FIN[lastKey]||{};
+  const dd=[m.arriendo||0,m.credito_consumo||0,m.cannabis||0,m.mama||0,(m.tc_delivery||0)+(m.tc_transporte||0),m.tc_suscripciones||0,m.tc_cuotas||0,(m.tc_almacen||0)+(m.tc_deportes||0)+(m.tc_otros||0)];
+  const dl=['Arriendo','Crédito','Cannabis','Mamá','Delivery/UberTrip','Suscripciones','Cuotas TC','Resto TC'];
+  const dc=['#4da6ff','#ff4d6d','#c084fc','#ffb347','#ff4d6d','#8a8a96','#3D3D3D','#55555f'];
+  try{finChDist&&finChDist.destroy();}catch(e){}
+  const cxD=finEl('finChartDist');
+  if(cxD) finChDist=new Chart(cxD,{type:'doughnut',data:{labels:dl,datasets:[{data:dd,backgroundColor:dc,borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#8a8a96',font:{size:10},boxWidth:10,padding:8}},tooltip:{backgroundColor:'#111',callbacks:{label:c=>` ${c.label}: ${CLP(c.raw)}`}}}}});
+};
+
+window.finLoginGoogle = async function(){
+  const btn=finEl('fin-login-btn'), err=finEl('fin-err');
+  btn.disabled=true; err.textContent='';
+  try{
+    await signInWithPopup(finAuth, new GoogleAuthProvider());
+  }catch(e){
+    err.textContent=e.code==='auth/popup-closed-by-user'?'Popup cerrado — intentá de nuevo':e.message;
+    btn.disabled=false;
+  }
+};
+
+window.finLogout = async function(){
+  if(!confirm('¿Cerrar sesión de Finanzas Personales?')) return;
+  await signOut(finAuth);
+};
 </script>
 </body>
 </html>
