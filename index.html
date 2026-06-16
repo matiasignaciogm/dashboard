@@ -392,6 +392,11 @@ input[type=date]{color-scheme:dark}
     </div>
 
     <div id="fin-view-res">
+    <!-- Toggle período -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:.75rem;gap:6px">
+      <button id="fin-per-mes" class="period-btn on" onclick="finSetPeriod('mes')">Este mes</button>
+      <button id="fin-per-ytd" class="period-btn" onclick="finSetPeriod('ytd')">Año a la fecha</button>
+    </div>
     <!-- KPIs -->
     <div class="kpis" id="fin-kpis"></div>
 
@@ -1620,6 +1625,16 @@ function finMsgReg(msg,color){
   setTimeout(()=>{ el.textContent=''; },4000);
 }
 
+let finPeriod = 'mes';
+window.finSetPeriod = function(p) {
+  finPeriod = p;
+  const mes = document.getElementById('fin-per-mes');
+  const ytd = document.getElementById('fin-per-ytd');
+  if(mes) mes.classList.toggle('on', p==='mes');
+  if(ytd) ytd.classList.toggle('on', p==='ytd');
+  window.finRender();
+};
+
 // ── RENDER RESUMEN ────────────────────────────────────────
 window.finRender=function(){
   const keys=finKeys();
@@ -1628,11 +1643,26 @@ window.finRender=function(){
   const lastM=FIN[lastKey]||{};
   const lastC=finCmp(lastM);
 
+  // Calcular YTD
+  const ytdKeys = keys.filter(k=>(FIN[k].retiro||0)>0);
+  const ytdRetiro = ytdKeys.reduce((s,k)=>s+(FIN[k].retiro||0),0);
+  const ytdGasto = ytdKeys.reduce((s,k)=>s+finCmp(FIN[k]).gt,0);
+  const ytdExc = ytdKeys.reduce((s,k)=>s+finCmp(FIN[k]).exc,0);
+  const ytdN = ytdKeys.length||1;
+  const isYTD = finPeriod==='ytd';
+
+  const dispRetiro = isYTD ? ytdRetiro : (lastM.retiro||0);
+  const dispGasto  = isYTD ? ytdGasto  : lastC.gt;
+  const dispExc    = isYTD ? ytdExc    : lastC.exc;
+  const dispSubRet = isYTD ? `prom. ${CLP(Math.round(ytdRetiro/ytdN))}/mes` : ((lastM.retiro||0)>=2500000?'✓ objetivo $2.5M':`falta ${CLP(2500000-(lastM.retiro||0))}`);
+  const dispSubGas = isYTD ? `prom. ${CLP(Math.round(ytdGasto/ytdN))}/mes` : `${Math.round(lastC.gt/Math.max(1,lastM.retiro||1)*100)}% del retiro`;
+  const dispSubExc = isYTD ? `prom. ${CLP(Math.round(ytdExc/ytdN))}/mes` : 'retiro − gastos';
+
   // KPIs
   finEl('fin-kpis').innerHTML=`
-    <div class="kpi"><div class="kl">Retiro MGPOST</div><div class="kv ${(lastM.retiro||0)>=2500000?'pos':'w'}">${CLP(lastM.retiro||0)}</div><div class="ks">${(lastM.retiro||0)>=2500000?'✓ objetivo $2.5M':'bajo objetivo'}</div></div>
-    <div class="kpi"><div class="kl">Gasto total</div><div class="kv">${CLP(lastC.gt)}</div><div class="ks">${Math.round(lastC.gt/Math.max(1,lastM.retiro||1)*100)}% del retiro</div></div>
-    <div class="kpi"><div class="kl">Excedente</div><div class="kv ${lastC.exc>=0?'pos':'neg'}">${CLP(lastC.exc)}</div><div class="ks">retiro − gastos</div></div>
+    <div class="kpi"><div class="kl">${isYTD?'Retiro YTD':'Retiro MGPOST'}</div><div class="kv ${dispRetiro>=(isYTD?2500000*ytdN:2500000)?'pos':'w'}">${CLP(dispRetiro)}</div><div class="ks">${dispSubRet}</div></div>
+    <div class="kpi"><div class="kl">${isYTD?'Gasto YTD':'Gasto total'}</div><div class="kv">${CLP(dispGasto)}</div><div class="ks">${dispSubGas}</div></div>
+    <div class="kpi"><div class="kl">${isYTD?'Excedente YTD':'Excedente'}</div><div class="kv ${dispExc>=0?'pos':'neg'}">${CLP(dispExc)}</div><div class="ks">${dispSubExc}</div></div>
     <div class="kpi"><div class="kl">Saldo ahorro</div><div class="kv" style="color:var(--accent)">${CLP(lastM.ahorro_saldo||0)}</div><div class="ks">Cta. Ahorro Santander</div></div>
     <div class="kpi"><div class="kl">Deuda TC</div><div class="kv ${(lastM.tc_deuda||0)>600000?'neg':(lastM.tc_deuda||0)>300000?'w':''}">${CLP(lastM.tc_deuda||0)}</div><div class="ks">Visa Life · cupo $1M</div></div>
   `;
@@ -1659,7 +1689,7 @@ window.finRender=function(){
 
   // Crédito consumo — calcula cuotas pagadas según historial
   const cuotasMes = keys.filter(k=>(FIN[k].credito_consumo||0)>0).length;
-  const cuotasPagadas = Math.min(12, cuotasMes + 9); // 9 cuotas antes de ene-2026
+  const cuotasPagadas = Math.min(12, cuotasMes + 7); // 7 cuotas pagadas antes de ene-2026 (cuota 7 = dic 2025)
   const cuotasRestantes = Math.max(0, 12 - cuotasPagadas);
   const credRest = cuotasRestantes * 403052;
   if(finEl('fin-cred-val')) finEl('fin-cred-val').textContent = credRest > 0 ? CLP(credRest) : '✓ Pagado';
