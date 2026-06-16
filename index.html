@@ -1419,6 +1419,8 @@ window.finLogout = function() {
   sessionStorage.removeItem('fin_ok');
   finShowGate();
 };
+
+window.finRender = function(){
   const keys=finKeys();
   if(!keys.length) return;
   const lastKey=keys[keys.length-1];
