@@ -1496,6 +1496,14 @@ window.finLogout = function() {
   finShowGate();
 };
 
+async function finLoad(){
+  if(!db) return;
+  try{
+    const snap=await getDocs(collection(db,FIN_COL));
+    snap.forEach(d=>{ FIN[d.id]=d.data(); });
+  }catch(e){ console.warn('finLoad',e); }
+}
+
 // ── SUB-TABS ──────────────────────────────────────────────
 window.finSubTab = function(tab) {
   document.getElementById('fin-view-res').style.display = tab==='res'?'':'none';
