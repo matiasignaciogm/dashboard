@@ -385,6 +385,13 @@ input[type=date]{color-scheme:dark}
       </div>
     </div>
 
+    <!-- Sub-nav -->
+    <div style="display:flex;gap:6px;margin-bottom:1rem">
+      <button id="fstab-res" onclick="finSubTab('res')" class="tab on" style="font-size:11px">Resumen</button>
+      <button id="fstab-reg" onclick="finSubTab('reg')" class="tab" style="font-size:11px">Registrar mes</button>
+    </div>
+
+    <div id="fin-view-res">
     <!-- KPIs -->
     <div class="kpis" id="fin-kpis"></div>
 
@@ -432,6 +439,75 @@ input[type=date]{color-scheme:dark}
         </div>
       </div>
     </div>
+    </div><!-- end fin-view-res -->
+
+    <!-- FORMULARIO REGISTRO MES -->
+    <div id="fin-view-reg" style="display:none">
+      <div class="main-grid">
+        <div>
+          <div class="card">
+            <p class="ct">Período</p>
+            <input type="month" id="freg-mes" style="width:200px;margin-bottom:1rem">
+
+            <p class="ct" style="margin-top:.75rem">Ingresos</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.75rem">
+              <div><label class="si-lbl">Retiro MGPOST</label><input type="number" id="freg-retiro" placeholder="2500000"></div>
+            </div>
+
+            <p class="ct" style="margin-top:.75rem">Gastos fijos</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.75rem">
+              <div><label class="si-lbl">Arriendo</label><input type="number" id="freg-arriendo" placeholder="800000"></div>
+              <div><label class="si-lbl">Crédito consumo</label><input type="number" id="freg-credito" placeholder="0"><span style="font-size:10px;color:var(--text3);font-family:var(--mono)">0 si no hubo cuota este mes</span></div>
+              <div><label class="si-lbl">Cannabis</label><input type="number" id="freg-cannabis" placeholder="230000"></div>
+              <div><label class="si-lbl">Ayuda mamá</label><input type="number" id="freg-mama" placeholder="0"></div>
+            </div>
+
+            <p class="ct" style="margin-top:.75rem">Tarjeta de crédito — por categoría</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.75rem">
+              <div><label class="si-lbl">Delivery (Uber Eats, PedidosYa)</label><input type="number" id="freg-delivery" placeholder="0"></div>
+              <div><label class="si-lbl">Transporte (Uber Trip)</label><input type="number" id="freg-transporte" placeholder="0"></div>
+              <div><label class="si-lbl">Suscripciones (Apple, etc)</label><input type="number" id="freg-suscripciones" placeholder="0"></div>
+              <div><label class="si-lbl">Almacén barrio (Los Alisos)</label><input type="number" id="freg-almacen" placeholder="0"></div>
+              <div><label class="si-lbl">Deportes / bicicleta</label><input type="number" id="freg-deportes" placeholder="0"></div>
+              <div><label class="si-lbl">Cuotas vigentes TC</label><input type="number" id="freg-cuotas" placeholder="0"></div>
+              <div><label class="si-lbl">Otros</label><input type="number" id="freg-otros" placeholder="0"></div>
+            </div>
+
+            <p class="ct" style="margin-top:.75rem">Saldos fin de mes</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.75rem">
+              <div><label class="si-lbl">Saldo cta. ahorro</label><input type="number" id="freg-ahorro" placeholder="5000000"></div>
+              <div><label class="si-lbl">Deuda TC (saldo pendiente)</label><input type="number" id="freg-tcdeuda" placeholder="0"></div>
+            </div>
+            <div style="margin-bottom:.75rem">
+              <label class="si-lbl">Notas del mes (opcional)</label>
+              <textarea id="freg-notas" placeholder="Gastos puntuales, viajes, novedades..." style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:8px 10px;font-family:var(--mono);font-size:12px;color:var(--text);resize:vertical;min-height:60px;outline:none;transition:border-color .15s"></textarea>
+            </div>
+            <button class="sbtn" onclick="finGuardarMes()">Guardar mes →</button>
+            <p id="freg-msg" style="font-size:11px;font-family:var(--mono);margin-top:8px;min-height:14px"></p>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <p class="ct">Vista previa</p>
+            <div class="dr"><span class="dl">Retiro</span><span class="dv" id="fprev-retiro">—</span></div>
+            <div class="dr"><span class="dl">Arriendo + crédito</span><span class="dv" id="fprev-fijos">—</span></div>
+            <div class="dr"><span class="dl">Cannabis + mamá</span><span class="dv" id="fprev-var">—</span></div>
+            <div class="dr"><span class="dl">Total TC</span><span class="dv" id="fprev-tc">—</span></div>
+            <div class="dr dtot"><span class="dl">Excedente</span><span class="dv" id="fprev-exc">—</span></div>
+          </div>
+          <div class="card">
+            <p class="ct">Historial guardado — clic para cargar</p>
+            <div id="freg-hist" style="max-height:300px;overflow-y:auto"></div>
+          </div>
+          <div class="tnote">
+            <p class="tnote-t">Referencia — promedios ene-may 2026</p>
+            <p class="tnote-d">Retiro: $2.826.673 · Arriendo: $693k · Delivery: $145k · Cannabis: $230k · Cuotas TC: $247k</p>
+          </div>
+        </div>
+      </div>
+    </div><!-- end fin-view-reg -->
+
     <div class="footer"><span>Finanzas personales · datos privados</span><span>Firebase · finanzas_personales</span></div>
   </div>
 </div>
@@ -1374,14 +1450,6 @@ function finShowGate() {
   finEl('fin-content').style.display = 'none';
 }
 
-
-async function finLoad(){
-  if(!db) return;
-  try{
-    const snap = await getDocs(collection(db, FIN_COL));
-    snap.forEach(d=>{ FIN[d.id]=d.data(); });
-  }catch(e){ console.warn("finLoad",e); }
-}
 window.finInit = async function() {
   if (finIsAuthed()) {
     await finLoad();
@@ -1428,7 +1496,99 @@ window.finLogout = function() {
   finShowGate();
 };
 
-window.finRender = function(){
+// ── SUB-TABS ──────────────────────────────────────────────
+window.finSubTab = function(tab) {
+  document.getElementById('fin-view-res').style.display = tab==='res'?'':'none';
+  document.getElementById('fin-view-reg').style.display = tab==='reg'?'':'none';
+  document.getElementById('fstab-res').classList.toggle('on', tab==='res');
+  document.getElementById('fstab-reg').classList.toggle('on', tab==='reg');
+  if(tab==='reg') finRenderHist();
+};
+
+// ── FORMULARIO ────────────────────────────────────────────
+function fregV(id){ return parseFloat(document.getElementById(id)?.value)||0; }
+
+function fregPreview(){
+  const ret=fregV('freg-retiro');
+  const fijos=fregV('freg-arriendo')+fregV('freg-credito')+fregV('freg-mama')+fregV('freg-cannabis');
+  const tc=fregV('freg-delivery')+fregV('freg-transporte')+fregV('freg-suscripciones')+fregV('freg-almacen')+fregV('freg-deportes')+fregV('freg-cuotas')+fregV('freg-otros');
+  const exc=ret-fijos-tc;
+  const el=id=>document.getElementById(id);
+  el('fprev-retiro').textContent=ret?CLP(ret):'—';
+  el('fprev-fijos').textContent=(fregV('freg-arriendo')+fregV('freg-credito'))?CLP(fregV('freg-arriendo')+fregV('freg-credito')):'—';
+  el('fprev-var').textContent=(fregV('freg-cannabis')+fregV('freg-mama'))?CLP(fregV('freg-cannabis')+fregV('freg-mama')):'—';
+  el('fprev-tc').textContent=tc?CLP(tc):'—';
+  el('fprev-exc').textContent=ret?CLP(exc):'—';
+  if(el('fprev-exc')) el('fprev-exc').style.color=exc>=0?'var(--green)':'var(--red)';
+}
+
+['freg-retiro','freg-arriendo','freg-credito','freg-cannabis','freg-mama','freg-delivery','freg-transporte','freg-suscripciones','freg-almacen','freg-deportes','freg-cuotas','freg-otros'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('input', fregPreview);
+});
+
+const _now=new Date();
+const _defMes=`${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}`;
+const _mesEl=document.getElementById('freg-mes');
+if(_mesEl) _mesEl.value=_defMes;
+
+function finRenderHist(){
+  const el=document.getElementById('freg-hist');
+  if(!el) return;
+  el.innerHTML=Object.keys(FIN).sort().reverse().map(k=>{
+    const c=finCmp(FIN[k]);
+    return `<div class="dr" style="cursor:pointer" onclick="finCargarEnForm('${k}')"><span class="dl">${finLbl(k)}</span><span class="dv ${c.exc>=0?'pos':'neg'}" style="font-size:11px">${CLP(c.exc)}</span></div>`;
+  }).join('');
+}
+
+window.finCargarEnForm=function(key){
+  const m=FIN[key]; if(!m) return;
+  const sv=(id,val)=>{ const el=document.getElementById(id); if(el) el.value=val||0; };
+  document.getElementById('freg-mes').value=key;
+  sv('freg-retiro',m.retiro); sv('freg-arriendo',m.arriendo); sv('freg-credito',m.credito_consumo);
+  sv('freg-cannabis',m.cannabis); sv('freg-mama',m.mama);
+  sv('freg-delivery',m.tc_delivery); sv('freg-transporte',m.tc_transporte);
+  sv('freg-suscripciones',m.tc_suscripciones); sv('freg-almacen',m.tc_almacen);
+  sv('freg-deportes',m.tc_deportes); sv('freg-cuotas',m.tc_cuotas); sv('freg-otros',m.tc_otros);
+  sv('freg-ahorro',m.ahorro_saldo); sv('freg-tcdeuda',m.tc_deuda);
+  const nota=document.getElementById('freg-notas'); if(nota) nota.value=m.notas||'';
+  fregPreview();
+};
+
+window.finGuardarMes=async function(){
+  const key=document.getElementById('freg-mes')?.value;
+  if(!key){ finMsgReg('Selecciona un mes','red'); return; }
+  const data={
+    retiro:fregV('freg-retiro'), arriendo:fregV('freg-arriendo'), credito_consumo:fregV('freg-credito'),
+    cannabis:fregV('freg-cannabis'), mama:fregV('freg-mama'),
+    tc_delivery:fregV('freg-delivery'), tc_transporte:fregV('freg-transporte'),
+    tc_suscripciones:fregV('freg-suscripciones'), tc_almacen:fregV('freg-almacen'),
+    tc_deportes:fregV('freg-deportes'), tc_cuotas:fregV('freg-cuotas'), tc_otros:fregV('freg-otros'),
+    ahorro_saldo:fregV('freg-ahorro'), tc_deuda:fregV('freg-tcdeuda'),
+    notas:document.getElementById('freg-notas')?.value||'',
+    _updated:new Date().toISOString()
+  };
+  FIN[key]=data;
+  if(db){
+    try{
+      await setDoc(doc(db,FIN_COL,key),data);
+      finMsgReg('Guardado en Firebase: '+finLbl(key),'green');
+    }catch(e){ finMsgReg('Error: '+e.message,'red'); }
+  } else {
+    finMsgReg('Guardado local (Firebase no conectado)','amber');
+  }
+  finRenderHist();
+  window.finRender();
+};
+
+function finMsgReg(msg,color){
+  const el=document.getElementById('freg-msg'); if(!el) return;
+  el.textContent=msg;
+  el.style.color=color==='green'?'var(--green)':color==='red'?'var(--red)':'var(--amber)';
+  setTimeout(()=>{ el.textContent=''; },4000);
+}
+
+// ── RENDER RESUMEN ────────────────────────────────────────
+window.finRender=function(){
   const keys=finKeys();
   if(!keys.length) return;
   const lastKey=keys[keys.length-1];
