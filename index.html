@@ -392,9 +392,8 @@ input[type=date]{color-scheme:dark}
     </div>
 
     <div id="fin-view-res">
-    <!-- Toggle período -->
-    <div style="display:flex;justify-content:flex-end;margin-bottom:.75rem;gap:6px">
-      <button id="fin-per-mes" class="period-btn on" onclick="finSetPeriod('mes')">Este mes</button>
+    <!-- Toggle YTD -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:.75rem">
       <button id="fin-per-ytd" class="period-btn" onclick="finSetPeriod('ytd')">Año a la fecha</button>
     </div>
     <!-- KPIs -->
@@ -1626,12 +1625,21 @@ function finMsgReg(msg,color){
 }
 
 let finPeriod = 'mes';
+let finMesActivo = null; // null = último mes con datos
+
 window.finSetPeriod = function(p) {
   finPeriod = p;
-  const mes = document.getElementById('fin-per-mes');
+  if(p === 'ytd') finMesActivo = null;
   const ytd = document.getElementById('fin-per-ytd');
-  if(mes) mes.classList.toggle('on', p==='mes');
   if(ytd) ytd.classList.toggle('on', p==='ytd');
+  window.finRender();
+};
+
+window.finSelecMes = function(key) {
+  finMesActivo = key;
+  finPeriod = 'mes';
+  const ytd = document.getElementById('fin-per-ytd');
+  if(ytd) ytd.classList.remove('on');
   window.finRender();
 };
 
@@ -1639,7 +1647,7 @@ window.finSetPeriod = function(p) {
 window.finRender=function(){
   const keys=finKeys();
   if(!keys.length) return;
-  const lastKey = [...keys].reverse().find(k=>(FIN[k].retiro||0)>0) || keys[keys.length-1];
+  const lastKey = finMesActivo || ([...keys].reverse().find(k=>(FIN[k].retiro||0)>0) || keys[keys.length-1]);
   const lastM=FIN[lastKey]||{};
   const lastC=finCmp(lastM);
 
@@ -1670,8 +1678,9 @@ window.finRender=function(){
   // Month cards
   finEl('fin-cards').innerHTML=keys.map(k=>{
     const m=FIN[k], c=finCmp(m);
-    return `<div class="fin-mc ${c.exc>=0?'fp':'fn'}">
-      <div class="fin-mn">${finLbl(k)}</div>
+    const isActive = k === lastKey;
+    return `<div class="fin-mc ${c.exc>=0?'fp':'fn'}${isActive?' act':''}" onclick="finSelecMes('${k}')" style="cursor:pointer${isActive?';border-color:var(--accent)':''}" title="Ver ${finLbl(k)}">
+      <div class="fin-mn" style="${isActive?'color:var(--accent)':''}">${finLbl(k)}</div>
       <div class="fin-mv">${CLP(m.retiro||0)}</div>
       <div class="fin-mr"><span>gasto</span><span class="fv">${CLP(c.gt)}</span></div>
       <div class="fin-mr"><span>exc.</span><span class="fv ${c.exc>=0?'fp':'fn'}">${CLP(c.exc)}</span></div>
