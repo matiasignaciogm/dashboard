@@ -433,6 +433,12 @@ input[type=date]{color-scheme:dark}
           <div class="fin-msub">Plan: liquidar jul–ago 2026</div>
           <div class="fin-bbg"><div class="fin-bfg" id="fin-tc-bar" style="width:0%;background:var(--amber)"></div></div>
         </div>
+        <div class="fin-meta">
+          <div class="fin-ml">Crédito consumo N°…8488</div>
+          <div class="fin-mval" id="fin-cred-val" style="color:var(--amber)">$806.104</div>
+          <div class="fin-msub" id="fin-cred-sub">2 cuotas de $403.052 · termina ago 2026</div>
+          <div class="fin-bbg"><div class="fin-bfg" id="fin-cred-bar" style="width:33%;background:var(--green)"></div></div>
+        </div>
         <div class="card">
           <p class="ct">Últimas notas</p>
           <p id="fin-nota" style="font-size:11px;color:var(--text2);line-height:1.5">—</p>
@@ -441,10 +447,10 @@ input[type=date]{color-scheme:dark}
           <p class="tnote-t">Presupuesto objetivo (jul 2026+)</p>
           <p class="tnote-d">
             Arriendo+GC $1.000.000 · Servicios $65.000<br>
-            Feria+super $286.000 · Oso $20.000<br>
+            Feria+super $280.000 · Oso $20.000<br>
             Cannabis $230.000 · TC variable ~$308.000<br>
             Aporte Amanda −$250.000<br>
-            <strong style="color:var(--green)">Neto ~$1.702.000 · Excedente ~$798.000</strong>
+            <strong style="color:var(--green)">Neto ~$1.696.000 · Excedente ~$804.000</strong>
           </p>
         </div>
       </div>
@@ -472,7 +478,7 @@ input[type=date]{color-scheme:dark}
               <div><label class="si-lbl">Servicios (luz+agua+internet)</label><input type="number" id="freg-servicios" placeholder="65000"></div>
               <div><label class="si-lbl">Cannabis</label><input type="number" id="freg-cannabis" placeholder="230000"></div>
               <div><label class="si-lbl">Ayuda mamá</label><input type="number" id="freg-mama" placeholder="0"></div>
-              <div><label class="si-lbl">Alimentación (feria + super)</label><input type="number" id="freg-alim" placeholder="286000"></div>
+              <div><label class="si-lbl">Alimentación (feria + super)</label><input type="number" id="freg-alim" placeholder="280000"></div>
               <div><label class="si-lbl">Oso (perro)</label><input type="number" id="freg-oso" placeholder="20000"></div>
               <div><label class="si-lbl">Aporte Amanda ↓ resta</label><input type="number" id="freg-amanda" placeholder="250000"><span style="font-size:10px;color:var(--text3);font-family:var(--mono)">Se resta del total</span></div>
             </div>
@@ -517,7 +523,7 @@ input[type=date]{color-scheme:dark}
           </div>
           <div class="tnote">
             <p class="tnote-t">Presupuesto objetivo (jul 2026+)</p>
-            <p class="tnote-d">Arriendo+GC $1M · Servicios $65k · Feria+super $286k · Cannabis $230k · Oso $20k · TC ~$308k · Amanda −$250k → <strong>Neto ~$1.702.000 · Excedente ~$798.000</strong></p>
+            <p class="tnote-d">Arriendo+GC $1M · Servicios $65k · Feria+super $280k · Cannabis $230k · Oso $20k · TC ~$308k · Amanda −$250k → <strong>Neto ~$1.696.000 · Excedente ~$804.000</strong></p>
           </div>
         </div>
       </div>
@@ -1618,7 +1624,7 @@ function finMsgReg(msg,color){
 window.finRender=function(){
   const keys=finKeys();
   if(!keys.length) return;
-  const lastKey=keys[keys.length-1];
+  const lastKey = [...keys].reverse().find(k=>(FIN[k].retiro||0)>0) || keys[keys.length-1];
   const lastM=FIN[lastKey]||{};
   const lastC=finCmp(lastM);
 
@@ -1650,6 +1656,16 @@ window.finRender=function(){
   finEl('fin-emerg-bar').style.width=Math.min(100,Math.round(ah/6000000*100))+'%';
   finEl('fin-tc-val').textContent=CLP(deuda);
   finEl('fin-tc-bar').style.width=Math.min(100,Math.round(deuda/1000000*100))+'%';
+
+  // Crédito consumo — calcula cuotas pagadas según historial
+  const cuotasMes = keys.filter(k=>(FIN[k].credito_consumo||0)>0).length;
+  const cuotasPagadas = Math.min(12, cuotasMes + 9); // 9 cuotas antes de ene-2026
+  const cuotasRestantes = Math.max(0, 12 - cuotasPagadas);
+  const credRest = cuotasRestantes * 403052;
+  if(finEl('fin-cred-val')) finEl('fin-cred-val').textContent = credRest > 0 ? CLP(credRest) : '✓ Pagado';
+  if(finEl('fin-cred-val')) finEl('fin-cred-val').style.color = credRest > 0 ? 'var(--amber)' : 'var(--green)';
+  if(finEl('fin-cred-sub')) finEl('fin-cred-sub').textContent = cuotasRestantes > 0 ? `${cuotasRestantes} cuota${cuotasRestantes>1?'s':''} de $403.052 · termina ago 2026` : 'Crédito liquidado';
+  if(finEl('fin-cred-bar')) finEl('fin-cred-bar').style.width = Math.round(cuotasPagadas/12*100)+'%';
   const notaKey=[...keys].reverse().find(k=>FIN[k].notas);
   if(notaKey) finEl('fin-nota').textContent=`${finLbl(notaKey)}: ${FIN[notaKey].notas}`;
 
