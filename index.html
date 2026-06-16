@@ -382,12 +382,13 @@ let ST = {
   },
   facturas: [],
   mes:'Mayo', costosOpen:false, tab:'t26', utaRef: UTA_REF_DEFAULT, concFiltro:'anio', facturasVista:'mes', facturasMes:new Date().toISOString().slice(0,7),
+  egresosTotalesF22: 0, ingresosF22: 0,
   lastUpdate: new Date().toLocaleDateString('es-CL')
 };
 window.ST = ST;
 
 function save(){try{localStorage.setItem('mgpost_v4',JSON.stringify(ST))}catch(e){}}
-function load(){try{const s=localStorage.getItem('mgpost_v4');if(s){const p=JSON.parse(s);if(p.d26)ST.d26=p.d26;if(p.mes)ST.mes=p.mes;if(p.costosOpen)ST.costosOpen=p.costosOpen;if(p.lastUpdate)ST.lastUpdate=p.lastUpdate;if(p.utaRef)ST.utaRef=p.utaRef;if(p.facturas)ST.facturas=p.facturas;if(p.concFiltro)ST.concFiltro=p.concFiltro;if(p.facturasVista)ST.facturasVista=p.facturasVista;if(p.facturasMes)ST.facturasMes=p.facturasMes;}}catch(e){}}
+function load(){try{const s=localStorage.getItem('mgpost_v4');if(s){const p=JSON.parse(s);if(p.d26)ST.d26=p.d26;if(p.mes)ST.mes=p.mes;if(p.costosOpen)ST.costosOpen=p.costosOpen;if(p.lastUpdate)ST.lastUpdate=p.lastUpdate;if(p.utaRef)ST.utaRef=p.utaRef;if(p.facturas)ST.facturas=p.facturas;if(p.concFiltro)ST.concFiltro=p.concFiltro;if(p.facturasVista)ST.facturasVista=p.facturasVista;if(p.facturasMes)ST.facturasMes=p.facturasMes;if(p.egresosTotalesF22)ST.egresosTotalesF22=p.egresosTotalesF22;if(p.ingresosF22)ST.ingresosF22=p.ingresosF22;if(p.gastosExtraAnio&&!p.egresosTotalesF22)ST.egresosTotalesF22=p.gastosExtraAnio;}}catch(e){}}
 
 const tv26=()=>MESES.reduce((s,m)=>s+(ST.d26[m]?ST.d26[m].venta:0),0);
 const md26=()=>MESES.filter(m=>ST.d26[m]).length;
@@ -545,12 +546,45 @@ function render26(){
 
 /* ── PROVISIÓN GLOBAL COMPLEMENTARIO ── */
 function renderIGC(total, md){
-  const utilAcum = total - COSTOS*md;
-  const utilProy = md>0 ? Math.round(utilAcum/md*12) : 0;
-  const utaRef = ST.utaRef || UTA_REF_DEFAULT;
-  const utaProy = utilProy>0 ? utilProy/utaRef : 0;
-  const tramo = TRAMOS_IGC.find(t=>utaProy<=t.hasta) || TRAMOS_IGC[TRAMOS_IGC.length-1];
-  const estimado = utilProy>0 ? Math.round(utilProy*tramo.tasa) : 0;
+  const egresoF22  = ST.egresosTotalesF22 || 0;
+  const ingresoF22 = ST.ingresosF22 || 0;
+  const utaRef     = ST.utaRef || UTA_REF_DEFAULT;
+  const ventaProy  = md>0 ? Math.round(total/md*12) : 0;
+
+  // — Determinar modo y calcular base imponible —
+  let baseImponible, modoCalculo, notaCalculo, ratioInfo='';
+
+  const tieneRatio = egresoF22>0 && ingresoF22>0;
+  const tieneF22solo = egresoF22>0 && !ingresoF22;
+
+  if(tieneRatio){
+    const ratio = egresoF22 / ingresoF22;
+    const egresoEstimado = Math.round(ventaProy * ratio);
+    baseImponible = Math.max(0, ventaProy - egresoEstimado);
+    modoCalculo = 'RATIO';
+    ratioInfo = `${(ratio*100).toFixed(1)}% costos históricos (F22: ${CLP(ingresoF22)} → ${CLP(egresoF22)})`;
+    notaCalculo = `Venta proyectada ${CLP(ventaProy)} × ratio ${(ratio*100).toFixed(1)}% = egresos est. ${CLP(egresoEstimado)}`;
+  } else if(tieneF22solo){
+    baseImponible = Math.max(0, ventaProy - egresoF22);
+    modoCalculo = 'F22';
+    notaCalculo = `Venta proyectada ${CLP(ventaProy)} − Egresos F22 ${CLP(egresoF22)}`;
+  } else {
+    const stackAnual = COSTOS * 12;
+    baseImponible = Math.max(0, ventaProy - stackAnual);
+    modoCalculo = 'STACK';
+    notaCalculo = `Venta proyectada ${CLP(ventaProy)} − STACK anual ${CLP(stackAnual)} (estimación parcial)`;
+  }
+
+  const utaProy  = baseImponible>0 ? baseImponible/utaRef : 0;
+  const tramo    = TRAMOS_IGC.find(t=>utaProy<=t.hasta) || TRAMOS_IGC[TRAMOS_IGC.length-1];
+  const estimado = baseImponible>0 ? Math.round(baseImponible*tramo.tasa) : 0;
+  const exento   = baseImponible < utaRef*13.5;
+
+  const modoColor = modoCalculo==='RATIO'?'var(--green)':modoCalculo==='F22'?'var(--green)':'var(--amber)';
+  const modoLabel = modoCalculo==='RATIO'
+    ? `✓ Ratio histórico F22 (${ratioInfo})`
+    : modoCalculo==='F22' ? '✓ F22 directo'
+    : '⚠ Solo STACK (estimación parcial — ingresa F22 para mayor precisión)';
 
   const rows = TRAMOS_IGC.map(t=>{
     const isCurrent = t===tramo;
@@ -559,26 +593,45 @@ function renderIGC(total, md){
   }).join('');
 
   $('igc26').innerHTML = `
-    <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:8px">
-      Utilidad acumulada ${md} mes${md===1?'':'es'}: <strong style="color:var(--text2)">${CLP(utilAcum)}</strong> ·
-      proyección anual: <strong style="color:${utilProy>=0?'var(--text2)':'var(--red)'}">${CLP(utilProy)}</strong>
+    <div style="font-size:10px;font-weight:600;color:${modoColor};font-family:var(--mono);margin-bottom:6px;letter-spacing:.03em">${modoLabel}</div>
+    <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:4px">${notaCalculo}</div>
+    <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:12px">
+      Base imponible estimada: <strong style="color:${exento?'var(--green)':'var(--amber)'}">${CLP(baseImponible)}</strong>
+      ${exento?`<span style="color:var(--green)"> — tramo exento ✓</span>`:`<span style="color:var(--amber)"> — revisar con contador</span>`}
     </div>
     ${rows}
-    <div class="si-row" style="margin-top:10px;align-items:end">
+    <div style="margin-top:14px;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px">Datos F22 (año anterior)</div>
+    <div class="si-row" style="align-items:end">
+      <div>
+        <label class="si-lbl">Ingresos F22</label>
+        <input type="number" id="si-ing22" value="${ingresoF22||''}" placeholder="Ej: 41.540.000"
+          onchange="setIngresosF22(this.value)">
+        <p class="si-hint">AT2026 → $41.540.000</p>
+      </div>
+      <div>
+        <label class="si-lbl">Egresos F22</label>
+        <input type="number" id="si-egr22" value="${egresoF22||''}" placeholder="Ej: 37.313.720"
+          onchange="setEgresosF22(this.value)">
+        <p class="si-hint">AT2026 → $37.313.720</p>
+      </div>
+    </div>
+    <div class="si-row" style="margin-top:0;align-items:end">
       <div>
         <label class="si-lbl">UTA de referencia (anual)</label>
         <input type="number" id="si-uta" value="${utaRef}" placeholder="${UTA_REF_DEFAULT}" onchange="setUtaRef(this.value)">
-        <p class="si-hint">≈ UTM de diciembre × 12. Valor oficial se publica en diciembre — ajusta aquí cuando lo confirmes.</p>
+        <p class="si-hint">≈ UTM diciembre × 12. Valor oficial en diciembre.</p>
       </div>
       <div>
-        <label class="si-lbl">Provisión estimada (conservadora)</label>
-        <p class="mf" style="margin-top:6px">${CLP(estimado)}</p>
-        <p class="si-hint">Tramo proyectado: ${tramo.label} · tasa marginal ${(tramo.tasa*100).toFixed(1)}%</p>
+        <label class="si-lbl">Provisión estimada</label>
+        <p class="mf" style="margin-top:6px;color:${exento?'var(--green)':'var(--text)'}">${exento?'$0':CLP(estimado)}</p>
+        <p class="si-hint">${exento
+          ?`Base ${CLP(baseImponible)} < 13,5 UTA (≈${CLP(Math.round(utaRef*13.5))})`
+          :`Tasa ${(tramo.tasa*100).toFixed(1)}% — confirma con contador`}</p>
       </div>
     </div>
     <div class="tnote" style="margin-top:10px;margin-bottom:0">
-      <p class="tnote-t">⚠ Estimación referencial</p>
-      <p class="tnote-d">Aplica la tasa marginal del tramo sobre la utilidad proyectada, sin descontar la rebaja propia de cada tramo — por eso tiende a <strong style="color:var(--accent)">sobreestimar</strong>, que es lo seguro para provisionar. Confirma la cifra exacta con tu contador antes de abril.</p>
+      <p class="tnote-t">ℹ️ Cómo usar</p>
+      <p class="tnote-d">Ingresa los datos del F22 más reciente (AT2026: ingresos $41.540.000 / egresos $37.313.720). Con ambos se calcula el ratio de costos histórico y se aplica a la proyección del año en curso. En abril 2027 actualizas con el F22 de 2026.</p>
     </div>
   `;
 }
@@ -586,6 +639,18 @@ function renderIGC(total, md){
 function setUtaRef(v){
   const n=parseFloat(v);
   ST.utaRef = n>0 ? n : UTA_REF_DEFAULT;
+  save(); renderIGC(tv26(), md26());
+  window.fbPush?.();
+}
+function setEgresosF22(v){
+  const n=parseFloat(v);
+  ST.egresosTotalesF22 = n>0 ? n : 0;
+  save(); renderIGC(tv26(), md26());
+  window.fbPush?.();
+}
+function setIngresosF22(v){
+  const n=parseFloat(v);
+  ST.ingresosF22 = n>0 ? n : 0;
   save(); renderIGC(tv26(), md26());
   window.fbPush?.();
 }
@@ -1101,6 +1166,8 @@ function mergeRemote(remote){
   window.ST.d26 = {...(window.ST.d26||{}), ...(remote.d26||{})};
   if(remote.lastUpdate) window.ST.lastUpdate = remote.lastUpdate;
   if(remote.utaRef) window.ST.utaRef = remote.utaRef;
+  if(remote.egresosTotalesF22) window.ST.egresosTotalesF22 = remote.egresosTotalesF22;
+  if(remote.ingresosF22) window.ST.ingresosF22 = remote.ingresosF22;
   window.ST.facturas = mergeFacturas(remote.facturas);
   window.save();
   window.render26();
@@ -1119,7 +1186,7 @@ async function initSync(){
       mergeRemote(snap.data());
     } else {
       // primera vez: sube lo que ya hay guardado en este dispositivo
-      await setDoc(dashRef, {d26: window.ST.d26, lastUpdate: window.ST.lastUpdate, utaRef: window.ST.utaRef, facturas: window.ST.facturas});
+      await setDoc(dashRef, {d26: window.ST.d26, lastUpdate: window.ST.lastUpdate, utaRef: window.ST.utaRef, facturas: window.ST.facturas, egresosTotalesF22: window.ST.egresosTotalesF22||0, ingresosF22: window.ST.ingresosF22||0});
     }
     setSyncUI('ok');
 
@@ -1139,7 +1206,7 @@ window.fbPush = async function(){
   if(!db||!dashRef) return;
   try{
     pushing=true;
-    await setDoc(dashRef, {d26: window.ST.d26, lastUpdate: window.ST.lastUpdate, utaRef: window.ST.utaRef, facturas: window.ST.facturas});
+    await setDoc(dashRef, {d26: window.ST.d26, lastUpdate: window.ST.lastUpdate, utaRef: window.ST.utaRef, facturas: window.ST.facturas, egresosTotalesF22: window.ST.egresosTotalesF22||0, ingresosF22: window.ST.ingresosF22||0});
     setSyncUI('ok');
   }catch(e){ console.warn('Firestore push',e); setSyncUI('off'); }
   finally{ pushing=false; }
